@@ -230,7 +230,7 @@ export function AnalyticsPage() {
       <Section id="overview" title="Overview" hint="The seven numbers that describe the whole operation in this scope.">
         <MetricStrip
           className="mb-3.5"
-          columns="repeat(7, minmax(0,1fr))"
+          columns="repeat(auto-fit, minmax(168px, 1fr))"
           items={[
             { label: 'Views', value: fmtNumber(t.views, { compact: true }), delta: <DeltaInline value={t.views} prev={p.views} />, hint: `${fmtNumber(t.views)} exact` },
             { label: 'Reach', value: fmtNumber(t.reach, { compact: true }), delta: <DeltaInline value={t.reach} prev={p.reach} />, hint: `${fmtPercent((t.reach / (t.views || 1)) * 100, 0)} of views` },

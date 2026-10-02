@@ -53,9 +53,13 @@ npm run smoke          # data + query harness: totals, breakdowns, pipeline, hea
                        # chart granularity, funnel, revenue, scoped filters, integrity checks
 npm run smoke:render   # renders all 19 routes into JSDOM, flushes effects and timers,
                        # then asserts real page content appeared with no NaN/undefined
+npm run smoke:flows    # drives real interactions: command palette, status changes with
+                       # undo, board drag & drop, platform filtering, idea promotion,
+                       # research filtering, motion preference, asset drawer
+npm run verify         # typecheck + all three harnesses
 ```
 
-The render harness catches what a type-check cannot: undefined access in derived values, empty renders, hook misuse and numbers leaking into the UI as `NaN`. Visual judgement is human — run `npm run dev` and look.
+The render harness catches what a type-check cannot: undefined access in derived values, empty renders, hook misuse and numbers leaking into the UI as `NaN`. The interaction harness proves the flows respond, not just that they paint. Visual judgement is human — run `npm run dev` and look.
 
 ## Design rules
 

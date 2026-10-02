@@ -42,6 +42,7 @@ export function DataTable<T extends { id: string }>({
   columns,
   className,
   onRowClick,
+  onRowActivate,
   onRowHover,
   selectedId,
   rowActions,
@@ -62,6 +63,8 @@ export function DataTable<T extends { id: string }>({
   columns: Column<T>[]
   className?: string
   onRowClick?: (row: T) => void
+  /** Shift/⌘/Alt click — "open the full workspace" rather than the peek panel. */
+  onRowActivate?: (row: T) => void
   onRowHover?: (row: T | null) => void
   selectedId?: string | null
   rowActions?: (row: T) => ReactNode
@@ -244,7 +247,7 @@ export function DataTable<T extends { id: string }>({
                   <div
                     role="row"
                     tabIndex={0}
-                    onClick={() => onRowClick?.(row)}
+                    onClick={(e) => (e.shiftKey || e.metaKey || e.altKey ? (onRowActivate ?? onRowClick)?.(row) : onRowClick?.(row))}
                     onMouseEnter={() => onRowHover?.(row)}
                     onMouseLeave={() => onRowHover?.(null)}
                     onKeyDown={(e) => {

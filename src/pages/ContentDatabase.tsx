@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -64,11 +64,14 @@ export function ContentDatabase() {
   const view = (params.get('view') as ViewId) ?? 'table'
   const [query, setQuery] = useState('')
 
-  /* Query-string → filter state. Makes every workspace saved view shareable. */
+  /* Query-string → filter state. Makes every workspace saved view shareable,
+     and keeps sidebar links honest: leaving a status scope clears it. */
+  const lastStatusParam = useRef<string | null>(null)
   useEffect(() => {
     const statusParam = params.get('status')
-    if (statusParam) {
-      const list = statusParam.split(',').filter(Boolean)
+    if (statusParam !== lastStatusParam.current) {
+      lastStatusParam.current = statusParam
+      const list = statusParam ? statusParam.split(',').filter(Boolean) : []
       const current = useApp.getState().filters.statuses
       if (list.join(',') !== current.join(',')) setFilterList('statuses', list)
     }
@@ -360,6 +363,7 @@ function TableView({
       columns={columns}
       rowHeight={44}
       onRowClick={onOpen}
+      onRowActivate={(r) => onNavigate(r.id)}
       selectedId={null}
       rowActions={(r) => <IconButton label="Open workspace" icon={<ArrowUpRight />} size="xs" onClick={(e) => { e.stopPropagation(); onNavigate(r.id) }} />}
       empty={
