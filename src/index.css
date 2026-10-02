@@ -1,0 +1,481 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* ============================================================================
+   CREATOR OS — DESIGN FOUNDATION
+   A near-black cockpit. Hairline borders, tabular metrics, one electric accent.
+   ========================================================================== */
+
+@theme {
+  /* --- Foundations ------------------------------------------------------- */
+  --color-base: #09090b;
+  --color-deep: #0d0f12;
+  --color-panel: #111318;
+  --color-surface-1: #14161b;
+  --color-surface-2: #181b21;
+  --color-surface-3: #1c2027;
+  --color-surface-4: #23282f;
+
+  /* --- Ink --------------------------------------------------------------- */
+  --color-ink-hi: #f2f5fa;
+  --color-ink: #d5dae4;
+  --color-ink-mid: #9ba3b4;
+  --color-ink-low: #6a7284;
+  --color-ink-faint: #474e5d;
+  --color-ink-ghost: #2f3541;
+
+  /* --- Lines ------------------------------------------------------------- */
+  --color-line-1: rgba(255, 255, 255, 0.045);
+  --color-line-2: rgba(255, 255, 255, 0.075);
+  --color-line-3: rgba(255, 255, 255, 0.12);
+  --color-line-4: rgba(255, 255, 255, 0.2);
+
+  /* --- Accent (electric / icy blue) ------------------------------------- */
+  --color-accent: #5b9dff;
+  --color-accent-bright: #8cbcff;
+  --color-accent-deep: #2f6fd0;
+  --color-accent-ink: #cfe2ff;
+
+  /* --- Secondary accents ------------------------------------------------- */
+  --color-cyan: #38d6f5;
+  --color-violet: #a78bfa;
+  --color-violet-deep: #7c5cf5;
+  --color-emerald: #34d399;
+  --color-amber: #fbbf24;
+  --color-rose: #fb7185;
+  --color-teal: #2dd4bf;
+
+  /* --- Platform identity (subtle, never neon) ---------------------------- */
+  --color-yt: #ff5a5a;
+  --color-ig: #d976ff;
+  --color-li: #4da3ff;
+
+  /* --- Typography -------------------------------------------------------- */
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-2xs--line-height: 1rem;
+  --text-3xs: 0.625rem; /* 10px */
+  --text-3xs--line-height: 0.875rem;
+
+  /* --- Motion ------------------------------------------------------------ */
+  --ease-cockpit: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.34, 1.4, 0.5, 1);
+
+  --animate-fade-up: fade-up 0.42s var(--ease-cockpit) both;
+  --animate-fade-in: fade-in 0.3s var(--ease-cockpit) both;
+  --animate-scale-in: scale-in 0.22s var(--ease-cockpit) both;
+  --animate-sheen: sheen 1.6s linear infinite;
+  --animate-pulse-soft: pulse-soft 2.6s ease-in-out infinite;
+  --animate-sweep: sweep 2.8s var(--ease-cockpit) infinite;
+  --animate-rise: rise 0.55s var(--ease-cockpit) both;
+  --animate-blip: blip 2.2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   KEYFRAMES
+   ========================================================================== */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.975) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sheen {
+  from {
+    background-position: -140% 0;
+  }
+  to {
+    background-position: 240% 0;
+  }
+}
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  60%,
+  100% {
+    transform: translateX(320%);
+  }
+}
+@keyframes blip {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 0.45;
+  }
+}
+@keyframes aura-spin {
+  to {
+    --aura-angle: 360deg;
+  }
+}
+
+@property --aura-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ============================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: var(--color-line-2);
+  }
+
+  html {
+    background: var(--color-base);
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    line-height: 1.5;
+    font-feature-settings: 'cv05' 1, 'ss03' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* Ambient depth: one cool bloom top-left, one faint violet bloom bottom-right.
+     Static, cheap, and the only "background decoration" in the entire product. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(1100px 620px at 8% -8%, rgba(91, 157, 255, 0.055), transparent 62%),
+      radial-gradient(900px 600px at 100% 108%, rgba(167, 139, 250, 0.04), transparent 60%);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: var(--color-ink-hi);
+    font-weight: 560;
+    letter-spacing: -0.014em;
+    margin: 0;
+  }
+
+  ::selection {
+    background: rgba(91, 157, 255, 0.28);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Scrollbars — thin, appear on hover of the container */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.11) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.085);
+    border-radius: 99px;
+    border: 2.5px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.18);
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+/* ============================================================================
+   UTILITIES — the Creator OS material vocabulary
+   ========================================================================== */
+
+/* Numeric alignment for every metric in the product. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+}
+
+@utility mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The canonical container surface. */
+@utility panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line-2);
+  border-radius: 12px;
+}
+
+@utility panel-raised {
+  background: linear-gradient(180deg, var(--color-surface-1), var(--color-panel));
+  border: 1px solid var(--color-line-2);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.025) inset,
+    0 12px 32px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* Editorial hairline rule used between dense rows. */
+@utility hairline-t {
+  border-top: 1px solid var(--color-line-1);
+}
+@utility hairline-b {
+  border-bottom: 1px solid var(--color-line-1);
+}
+@utility hairline-r {
+  border-right: 1px solid var(--color-line-1);
+}
+
+/* JARVIS: the ambient intelligence glow. Reserved for active / focused /
+   important surfaces only. Three intensities. */
+@utility glow-1 {
+  box-shadow:
+    0 0 0 1px rgba(91, 157, 255, 0.13),
+    0 0 22px -8px rgba(91, 157, 255, 0.35);
+}
+@utility glow-2 {
+  border-color: rgba(91, 157, 255, 0.3) !important;
+  box-shadow:
+    0 0 0 1px rgba(91, 157, 255, 0.16),
+    0 0 30px -8px rgba(91, 157, 255, 0.42),
+    inset 0 0 26px -18px rgba(91, 157, 255, 0.7);
+}
+@utility glow-3 {
+  border-color: rgba(91, 157, 255, 0.4) !important;
+  box-shadow:
+    0 0 0 1px rgba(91, 157, 255, 0.24),
+    0 0 48px -10px rgba(91, 157, 255, 0.55),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Animated conic hairline that orbits a selected surface. */
+@utility aura {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--aura-angle),
+      transparent 0deg,
+      rgba(91, 157, 255, 0.75) 30deg,
+      rgba(140, 188, 255, 0.25) 70deg,
+      transparent 130deg,
+      transparent 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: aura-spin 5.5s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+/* Cursor-aware spotlight. Parent sets --mx / --my on pointer move. */
+@utility spotlight {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      440px circle at var(--mx, 50%) var(--my, 0%),
+      rgba(91, 157, 255, 0.09),
+      transparent 62%
+    );
+    opacity: 0;
+    transition: opacity 0.4s var(--ease-cockpit);
+    z-index: 1;
+  }
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Faint technical grid used behind hero analytics surfaces. */
+@utility grid-etch {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Skeleton shimmer */
+@utility shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.062) 45%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  background-size: 220% 100%;
+  animation: var(--animate-sheen);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scroll-fade-y {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* Dense table typography */
+@utility cell-label {
+  font-size: 10px;
+  font-weight: 560;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  color: var(--color-ink-low);
+}
+
+@utility drag-ghost {
+  opacity: 0.42;
+  filter: saturate(0.7);
+}
+
+/* ============================================================================
+   REDUCED MOTION — a first-class mode, not an afterthought.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* High-contrast assist */
+html[data-contrast='high'] {
+  --color-line-2: rgba(255, 255, 255, 0.18);
+  --color-line-1: rgba(255, 255, 255, 0.12);
+  --color-ink-mid: #b8bfcd;
+  --color-ink-low: #949cad;
+}
+
+/* Recharts polish: kill default focus rings, tighten text */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+.recharts-text {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: var(--color-ink-low);
+}
