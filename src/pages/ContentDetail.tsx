@@ -633,7 +633,7 @@ function ScriptTab({
                   onChange={(e) => updateBlock(block.id, { title: e.target.value })}
                   onFocus={() => setFocusBlock(block.id)}
                   onBlur={() => setFocusBlock(null)}
-                  className="w-full bg-transparent text-[13px] font-medium text-ink-hi focus:outline-none"
+                  className="w-full bg-transparent text-[13.5px] font-semibold tracking-[-0.012em] text-ink-hi focus:outline-none"
                   aria-label={`Block ${i + 1} title`}
                 />
                 <textarea
@@ -641,9 +641,13 @@ function ScriptTab({
                   onChange={(e) => updateBlock(block.id, { body: e.target.value })}
                   onFocus={() => setFocusBlock(block.id)}
                   onBlur={() => setFocusBlock(null)}
-                  rows={Math.max(2, Math.min(9, Math.ceil(block.body.length / 96)))}
+                  rows={Math.max(2, Math.min(9, Math.ceil(block.body.length / 92)))}
                   placeholder="Write the beat…"
-                  className="mt-1.5 w-full resize-none bg-transparent text-[12.5px] leading-[1.75] text-ink placeholder:text-ink-ghost focus:outline-none"
+                  className={cn(
+                    'mt-2 w-full max-w-[74ch] resize-none bg-transparent text-[13.5px] leading-[1.72] text-ink',
+                    'tracking-[-0.003em] placeholder:text-ink-ghost transition-colors duration-[var(--duration-2)] focus:outline-none',
+                    focusBlock === block.id ? 'text-ink-hi' : 'text-ink',
+                  )}
                   aria-label={`Block ${i + 1} body`}
                 />
                 {block.note && (

@@ -40,12 +40,10 @@ export function Page({
         'mx-auto w-full',
         WIDTHS[width],
         bleed ? 'px-0 py-0' : 'px-3.5 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6',
-        gap === 'sm' && 'space-y-3',
-        gap === 'lg' && 'space-y-6',
+        gap === 'sm' ? 'space-y-3' : gap === 'lg' ? 'space-y-6' : 'space-y-4 lg:space-y-5',
         'pb-24 lg:pb-8',
         className,
       )}
-      style={gap === 'md' ? { display: 'block' } : undefined}
     >
       {children}
     </div>
