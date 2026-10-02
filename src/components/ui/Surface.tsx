@@ -14,6 +14,7 @@ export function Panel({
   className,
   glow,
   interactive,
+  lift,
   as: Tag = 'section',
   ...rest
 }: {
@@ -22,13 +23,17 @@ export function Panel({
   /** 0 = none, 1 = subtle hover bloom, 2 = selected, 3 = focused */
   glow?: 0 | 1 | 2 | 3
   interactive?: boolean
+  /** Rises 1.5px on hover — for cards that open something. */
+  lift?: boolean
   as?: 'section' | 'div' | 'article' | 'aside'
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <Tag
       className={cn(
         'relative rounded-xl border border-line-2 bg-panel',
+        'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.022),0_1px_2px_0_rgba(0,0,0,0.3)]',
         'transition-[border-color,background-color,box-shadow,transform] duration-250 ease-[var(--ease-cockpit)]',
+        (lift || interactive) && 'lift',
         glow === 2 && 'glow-2',
         glow === 3 && 'glow-3',
         interactive && 'hover:border-line-3 hover:bg-surface-1',
@@ -60,7 +65,7 @@ export function PanelHeader({
   return (
     <header
       className={cn(
-        'flex items-start justify-between gap-4 border-b border-line-1',
+        'relative flex items-start justify-between gap-4 border-b border-line-1',
         dense ? 'px-3 py-2' : 'px-4 py-3',
         className,
       )}
@@ -68,8 +73,8 @@ export function PanelHeader({
       <div className="flex min-w-0 items-start gap-2.5">
         {icon && <span className="mt-px shrink-0 text-ink-low [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>}
         <div className="min-w-0">
-          <h3 className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-ink-hi">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-[11.5px] leading-snug text-ink-low">{subtitle}</p>}
+          <h3 className="truncate text-[12.5px] font-semibold tracking-[-0.012em] text-ink-hi">{title}</h3>
+          {subtitle && <p className="mt-0.5 max-w-[92ch] text-[11.5px] leading-snug text-ink-low">{subtitle}</p>}
         </div>
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
@@ -146,6 +151,7 @@ export function Badge({
       style={style}
       className={cn(
         'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border font-medium',
+        'transition-[background-color,border-color,color] duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
         size === 'xs' ? 'h-5 px-1.5 text-[10px]' : 'h-6 px-2 text-[10.5px]',
         mono && 'mono',
         TONES[tone],
@@ -162,7 +168,7 @@ export function Badge({
 export function StatusPill({ name, color, className, dim }: { name: string; color: string; className?: string; dim?: boolean }) {
   return (
     <span className={cn('inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium', className)} style={{ color: dim ? undefined : color }}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 8px ${color}55` }} />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 8px ${color}66` }} />
       <span className={dim ? 'text-ink-mid' : undefined}>{name}</span>
     </span>
   )
@@ -190,7 +196,15 @@ export function Delta({
   const Icon = flat ? Minus : value > 0 ? ArrowUpRight : ArrowDownRight
   const tone = flat ? 'text-ink-low' : positive ? 'text-emerald' : 'text-rose'
   return (
-    <span className={cn('inline-flex items-center gap-1 whitespace-nowrap font-medium', tone, className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-md font-medium',
+        size === 'xs' && !flat && (positive ? 'bg-emerald/[0.09] px-1 py-px' : 'bg-rose/[0.09] px-1 py-px'),
+        size === 'sm' && !flat && (positive ? 'bg-emerald/[0.08] px-1.5 py-0.5' : 'bg-rose/[0.08] px-1.5 py-0.5'),
+        tone,
+        className,
+      )}
+    >
       <Icon className={cn(size === 'xs' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-3.5 w-3.5')} aria-hidden />
       <span className={cn('tnum', size === 'xs' ? 'text-[10.5px]' : size === 'md' ? 'text-[13px]' : 'text-[11.5px]')}>
         {flat ? '0.0%' : fmtSignedPercent(value)}
@@ -235,7 +249,13 @@ export function Progress({
       <div className={cn('w-full overflow-hidden rounded-full', track ? 'bg-white/[0.07]' : 'bg-white/[0.05]', h)} role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
         <div
           className="h-full rounded-full transition-[width] duration-500 ease-[var(--ease-cockpit)]"
-          style={{ width: `${pct}%`, background: color, boxShadow: `0 0 12px -2px ${color}` }}
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${color}D9, ${color})`,
+            boxShadow: `0 0 12px -2px ${color}`,
+            animation: 'bar-grow 0.5s var(--ease-out-quint) both',
+            transformOrigin: 'left center',
+          }}
         />
       </div>
     </div>
@@ -277,7 +297,15 @@ export function Ring({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c - (pct / 100) * c}
-          style={{ transition: 'stroke-dashoffset 700ms var(--ease-cockpit)', filter: `drop-shadow(0 0 5px ${color}66)` }}
+          style={
+            {
+              transition: 'stroke-dashoffset 760ms var(--ease-cockpit)',
+              filter: `drop-shadow(0 0 5px ${color}66)`,
+              animation: 'draw 820ms var(--ease-cockpit) both',
+              '--dash-from': `${c}`,
+              '--dash-to': `${c - (pct / 100) * c}`,
+            } as React.CSSProperties
+          }
         />
       </svg>
       <span className="absolute inset-0 grid place-items-center">{children}</span>
@@ -377,7 +405,7 @@ export function EmptyState({
   return (
     <div className={cn('flex flex-col items-center justify-center text-center', compact ? 'px-4 py-8' : 'px-6 py-14', className)}>
       <div className="relative mb-4 grid h-11 w-11 place-items-center rounded-xl border border-line-2 bg-white/[0.025]">
-        <span className="absolute inset-0 rounded-xl bg-accent/[0.06] blur-md" aria-hidden />
+        <span className="absolute inset-0 rounded-xl bg-accent/[0.07] blur-md animate-[breathe_3.6s_ease-in-out_infinite]" aria-hidden />
         <span className="relative text-ink-low [&>svg]:h-[18px] [&>svg]:w-[18px]">{icon ?? <Minus className="h-4 w-4" />}</span>
       </div>
       <h3 className="text-[13.5px] font-semibold text-ink-hi">{title}</h3>
@@ -404,8 +432,9 @@ export function ErrorState({
 }) {
   return (
     <div className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}>
-      <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl border border-amber/25 bg-amber/[0.07]">
-        <AlertTriangle className="h-[18px] w-[18px] text-amber" />
+      <div className="relative mb-4 grid h-11 w-11 place-items-center rounded-xl border border-amber/25 bg-amber/[0.07]">
+        <span className="absolute inset-0 rounded-xl bg-amber/[0.08] blur-md" aria-hidden />
+        <AlertTriangle className="relative h-[18px] w-[18px] text-amber" />
       </div>
       <h3 className="text-[13.5px] font-semibold text-ink-hi">{title}</h3>
       {body && <p className="mt-1.5 max-w-[46ch] text-[12px] leading-relaxed text-ink-low">{body}</p>}
@@ -413,7 +442,7 @@ export function ErrorState({
         {onRetry && (
           <button
             onClick={onRetry}
-            className="inline-flex h-7.5 items-center gap-1.5 rounded-md border border-line-3 bg-white/[0.05] px-2.5 text-[12px] text-ink-hi transition-colors hover:bg-white/[0.09]"
+            className="inline-flex h-7.5 items-center gap-1.5 rounded-md border border-line-3 bg-white/[0.05] px-2.5 text-[12px] text-ink-hi transition-[background-color,border-color] duration-[var(--duration-2)] hover:border-line-4 hover:bg-white/[0.09] active:translate-y-px"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </button>

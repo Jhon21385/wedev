@@ -30,9 +30,11 @@ import { getDataset } from '@/data/store'
    56px icon rail. Collapse animates width only — never reflows the main grid.
    ========================================================================== */
 
-export function Sidebar() {
+export function Sidebar({ expanded }: { expanded?: boolean } = {}) {
   const ds = useDataset()
-  const collapsed = useApp((s) => s.sidebarCollapsed)
+  const stored = useApp((s) => s.sidebarCollapsed)
+  /* The slide-over always shows labels, whatever the rail preference is. */
+  const collapsed = expanded ? false : stored
   const toggle = useApp((s) => s.toggleSidebar)
   const setCreateOpen = useApp((s) => s.setCreateOpen)
   const setCommandOpen = useApp((s) => s.setCommandOpen)
@@ -55,7 +57,7 @@ export function Sidebar() {
     <aside
       className={cn(
         'relative z-30 flex h-full shrink-0 flex-col border-r border-line-2 bg-deep/80 backdrop-blur-xl',
-        'transition-[width] duration-300 ease-[var(--ease-cockpit)]',
+        'transition-[width] duration-[var(--duration-4)] ease-[var(--ease-cockpit)]',
         collapsed ? 'w-[56px]' : 'w-[236px]',
       )}
     >
@@ -168,20 +170,26 @@ function NavRow({ item, collapsed, count }: { item: NavItem; collapsed: boolean;
       to={item.href}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'group/row relative flex items-center gap-2.5 rounded-lg transition-all duration-200 ease-[var(--ease-cockpit)]',
+        'group/row relative flex items-center gap-2.5 rounded-lg transition-all duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
         collapsed ? 'mx-auto h-8 w-8 justify-center' : 'h-[30px] px-2',
         isActive
-          ? 'bg-white/[0.062] text-ink-hi'
-          : 'text-ink-mid hover:bg-white/[0.038] hover:text-ink-hi',
+          ? 'bg-white/[0.068] text-ink-hi shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]'
+          : 'text-ink-mid hover:bg-white/[0.04] hover:text-ink-hi hover:translate-x-[1px]',
       )}
     >
       {isActive && !collapsed && (
-        <span className="absolute left-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(91,157,255,0.85)]" aria-hidden />
+        <span className="absolute left-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(91,157,255,0.85)] animate-[scale-in_.24s_var(--ease-snap)_both]" aria-hidden />
       )}
       {isActive && collapsed && (
         <span className="absolute -left-2 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(91,157,255,0.85)]" aria-hidden />
       )}
-      <Icon className={cn('shrink-0 transition-colors', collapsed ? 'h-[17px] w-[17px]' : 'h-[15px] w-[15px]', isActive ? 'text-accent-bright' : 'text-ink-low group-hover/row:text-ink')} />
+      <Icon
+        className={cn(
+          'shrink-0 transition-[color,transform] duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
+          collapsed ? 'h-[17px] w-[17px]' : 'h-[15px] w-[15px]',
+          isActive ? 'text-accent-bright' : 'text-ink-low group-hover/row:text-ink group-hover/row:scale-[1.06]',
+        )}
+      />
       {!collapsed && (
         <>
           <span className="min-w-0 flex-1 truncate text-[12.5px]">{item.label}</span>

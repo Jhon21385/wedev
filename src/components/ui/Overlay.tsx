@@ -58,13 +58,13 @@ export function Popover({
           <div className="fixed z-[110]" style={anchorStyle(anchorRef.current, align, side, width)} role="dialog">
             <div
               className={cn(
-                'overflow-hidden rounded-xl border border-line-3 bg-surface-2/97 shadow-[0_28px_70px_-18px_rgba(0,0,0,0.95)] backdrop-blur-xl',
-                side === 'bottom'
-                  ? 'animate-[scale-in_170ms_var(--ease-cockpit)_both] origin-top'
-                  : 'animate-[scale-in_170ms_var(--ease-cockpit)_both] origin-bottom',
+                'relative overflow-hidden rounded-xl border border-line-3 bg-surface-2/97 shadow-[0_28px_70px_-18px_rgba(0,0,0,0.95)] backdrop-blur-xl',
+                'animate-[pop_180ms_var(--ease-cockpit)_both]',
+                side === 'bottom' ? 'origin-top' : 'origin-bottom',
                 contentClassName,
               )}
             >
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" aria-hidden />
               {typeof children === 'function' ? children(() => setOpen(false)) : children}
             </div>
           </div>,
@@ -204,7 +204,7 @@ export function Drawer({
 
   return createPortal(
     <div className="fixed inset-0 z-[130]" role="dialog" aria-modal="true" aria-labelledby={labelledBy}>
-      <div className="absolute inset-0 animate-[fade-in_180ms_var(--ease-cockpit)_both] bg-black/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 animate-[fade-in_200ms_var(--ease-cockpit)_both] bg-black/50 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
       <div
         className={cn(
           'absolute border-line-3 bg-surface-1/98 shadow-[0_0_80px_-10px_rgba(0,0,0,0.95)]',
@@ -219,7 +219,7 @@ export function Drawer({
       >
         {title && (
           <header className="flex items-center justify-between gap-3 border-b border-line-2 px-4 py-3">
-            <h2 className="text-[13px] font-semibold text-ink-hi">{title}</h2>
+            <h2 className="text-[13px] font-semibold tracking-[-0.012em] text-ink-hi">{title}</h2>
             <IconButton label="Close" icon={<X />} onClick={onClose} side="left" />
           </header>
         )}
@@ -308,7 +308,8 @@ export function ToastHost({ toasts, onDismiss }: { toasts: { id: string; kind: s
         <div
           key={t.id}
           className={cn(
-            'pointer-events-auto animate-[rise_240ms_var(--ease-cockpit)_both] rounded-xl border bg-surface-2/97 p-3 shadow-[0_20px_50px_-14px_rgba(0,0,0,0.95)] backdrop-blur-xl',
+            'pointer-events-auto animate-[toast-in_300ms_var(--ease-cockpit)_both] rounded-xl border bg-surface-2/97 p-3 shadow-[0_20px_50px_-14px_rgba(0,0,0,0.95)] backdrop-blur-xl',
+            'transition-transform duration-[var(--duration-2)] ease-[var(--ease-cockpit)] hover:-translate-y-px',
             tone[t.kind] ?? 'border-line-3',
           )}
         >
@@ -323,7 +324,7 @@ export function ToastHost({ toasts, onDismiss }: { toasts: { id: string; kind: s
                     t.action!.run()
                     dismiss(t.id)
                   }}
-                  className="mt-2 text-[11.5px] font-medium text-accent transition-colors hover:text-accent-bright"
+                  className="mt-2 text-[11.5px] font-medium text-accent underline decoration-accent/30 underline-offset-2 transition-colors hover:text-accent-bright hover:decoration-accent"
                 >
                   {t.action.label}
                 </button>

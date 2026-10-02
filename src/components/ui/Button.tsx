@@ -15,11 +15,10 @@ export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-[#06101F] font-semibold hover:bg-accent-bright active:bg-accent-deep shadow-[0_4px_18px_-6px_rgba(91,157,255,0.65)] hover:shadow-[0_6px_26px_-6px_rgba(91,157,255,0.85)] border border-transparent',
+    'bg-[linear-gradient(180deg,#7AAFFF,#5B9DFF_58%,#4E8FEE)] text-[#05101F] font-semibold hover:bg-[linear-gradient(180deg,#93BEFF,#6EA9FF_58%,#5B9DFF)] border border-accent-bright/40 shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_5px_20px_-8px_rgba(91,157,255,0.85)] hover:shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_28px_-8px_rgba(91,157,255,1)]',
   secondary:
-    'bg-white/[0.055] text-ink-hi border border-line-3 hover:bg-white/[0.09] hover:border-line-4 active:bg-white/[0.07]',
-  'accent-soft':
-    'bg-accent/12 text-accent-ink border border-accent/25 hover:bg-accent/18 hover:border-accent/40',
+    'bg-white/[0.055] text-ink-hi border border-line-3 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] hover:bg-white/[0.085] hover:border-line-4',
+  'accent-soft': 'bg-accent/12 text-accent-ink border border-accent/25 hover:bg-accent/18 hover:border-accent/40',
   ghost: 'bg-transparent text-ink-mid border border-transparent hover:bg-white/[0.05] hover:text-ink-hi',
   outline: 'bg-transparent text-ink border border-line-3 hover:border-line-4 hover:bg-white/[0.035] hover:text-ink-hi',
   danger: 'bg-rose/12 text-rose border border-rose/30 hover:bg-rose/20 hover:border-rose/45',
@@ -51,10 +50,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'relative inline-flex select-none items-center justify-center whitespace-nowrap font-medium',
-        'transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-[var(--ease-cockpit)]',
-        'active:translate-y-[0.5px]',
+        'group/btn relative inline-flex select-none items-center justify-center overflow-hidden whitespace-nowrap font-medium',
+        'transition-[background-color,border-color,background-image,color,box-shadow,transform] duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
+        'press',
         'disabled:pointer-events-none disabled:opacity-40',
+        variant === 'primary' && 'refract',
         VARIANTS[variant],
         SIZES[size],
         block && 'w-full',
@@ -65,7 +65,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {loading ? (
         <Loader2 className={cn('animate-spin', size === 'xs' ? 'h-3 w-3' : 'h-3.5 w-3.5')} aria-hidden />
       ) : (
-        icon && <span className={cn('shrink-0 opacity-90', size === 'lg' ? '[&>svg]:h-4 [&>svg]:w-4' : '[&>svg]:h-3.5 [&>svg]:w-3.5')}>{icon}</span>
+        icon && (
+          <span
+            className={cn(
+              'shrink-0 opacity-90 transition-transform duration-[var(--duration-2)] ease-[var(--ease-snap)] group-hover/btn:scale-110',
+              size === 'lg' ? '[&>svg]:h-4 [&>svg]:w-4' : '[&>svg]:h-3.5 [&>svg]:w-3.5',
+            )}
+          >
+            {icon}
+          </span>
+        )
       )}
       {children && <span className="truncate">{children}</span>}
       {iconRight && !loading && (
@@ -106,10 +115,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       ref={ref}
       aria-label={label}
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center',
-        'transition-[background-color,border-color,color,box-shadow] duration-200 ease-[var(--ease-cockpit)]',
+        'relative inline-flex shrink-0 items-center justify-center [&>svg]:transition-colors [&>svg]:duration-[var(--duration-2)]',
+        'transition-[background-color,border-color,color,box-shadow,transform] duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
+        'press',
         'disabled:pointer-events-none disabled:opacity-40',
-        active ? 'bg-accent/14 text-accent-ink border border-accent/25' : VARIANTS[variant],
+        active ? 'bg-accent/14 text-accent-ink border border-accent/25 glow-1' : VARIANTS[variant],
         ICON_SIZES[size],
         className,
       )}
@@ -117,7 +127,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     >
       {icon}
       {dot && (
-        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_6px_rgba(91,157,255,0.9)]" />
+        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_6px_rgba(91,157,255,0.9)] animate-[blip_2.4s_ease-in-out_infinite]" />
       )}
     </button>
   )

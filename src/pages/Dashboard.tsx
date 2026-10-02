@@ -190,7 +190,7 @@ export function Dashboard() {
         <h2 id="pulse-heading" className="sr-only">
           Creator pulse
         </h2>
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="stagger grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <MetricCard
             metricId="followers"
             value={totals.followers}
@@ -669,7 +669,11 @@ function PageHead({ greeting, name, mission, overdue, onNew }: { greeting: strin
   const ds = useDataset()
   const now = new Date()
   return (
-    <header className="mb-4">
+    <header className="relative mb-4 pb-4">
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-accent/45 via-white/[0.07] to-transparent"
+        aria-hidden
+      />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="mb-1.5 flex items-center gap-2">
@@ -682,9 +686,7 @@ function PageHead({ greeting, name, mission, overdue, onNew }: { greeting: strin
               {now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {ds.creator.timezone.split(' · ')[1] ?? 'IST'}
             </span>
           </div>
-          <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.028em] text-ink-hi">
-            {greeting}, {name}.
-          </h1>
+          <h1 className="title-1">{greeting}, {name}.</h1>
           <p className="mt-1.5 max-w-[76ch] text-[12.5px] leading-relaxed text-ink-low">{mission}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -230,7 +230,6 @@ export function AnalyticsPage() {
       <Section id="overview" title="Overview" hint="The seven numbers that describe the whole operation in this scope.">
         <MetricStrip
           className="mb-3.5"
-          columns="repeat(auto-fit, minmax(168px, 1fr))"
           items={[
             { label: 'Views', value: fmtNumber(t.views, { compact: true }), delta: <DeltaInline value={t.views} prev={p.views} />, hint: `${fmtNumber(t.views)} exact` },
             { label: 'Reach', value: fmtNumber(t.reach, { compact: true }), delta: <DeltaInline value={t.reach} prev={p.reach} />, hint: `${fmtPercent((t.reach / (t.views || 1)) * 100, 0)} of views` },
@@ -825,7 +824,7 @@ export function AnalyticsPage() {
             <p className="mt-2 text-center text-[11px] text-ink-low">Weighted across the six pillars below</p>
           </Panel>
 
-          <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="stagger grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             {health.map((h) => (
               <Panel key={h.id} className="p-3.5">
                 <div className="flex items-start justify-between gap-2">

@@ -228,7 +228,7 @@ export function BrandPage() {
 
           <Panel>
             <PanelHeader dense icon={<Layers />} title="Brand assets" subtitle="Logos, marks and type files referenced by the templates" />
-            <div className="grid gap-2.5 p-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="stagger grid gap-2.5 p-3.5 sm:grid-cols-2 lg:grid-cols-3">
               {brand.assets.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 rounded-lg border border-line-2 bg-white/[0.014] p-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line-2 bg-white/[0.03]">

@@ -240,7 +240,7 @@ export function CommandPalette() {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="relative w-full max-w-[640px] animate-[rise_220ms_var(--ease-cockpit)_both] overflow-hidden rounded-2xl border border-line-3 bg-surface-1/98 shadow-[0_50px_140px_-30px_rgba(0,0,0,1)]"
+        className="relative w-full max-w-[640px] animate-[pop_240ms_var(--ease-cockpit)_both] overflow-hidden rounded-2xl border border-line-3 bg-surface-1/98 shadow-[0_50px_140px_-30px_rgba(0,0,0,1),0_0_70px_-30px_rgba(91,157,255,0.55)]"
       >
         <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" aria-hidden />
 
@@ -295,8 +295,11 @@ export function CommandPalette() {
                       item.run()
                     }}
                     className={cn(
-                      'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-120',
-                      active ? 'bg-white/[0.07] text-ink-hi' : 'text-ink hover:bg-white/[0.04]',
+                      'group/opt relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left',
+                      'transition-[background-color,color,box-shadow] duration-[var(--duration-1)] ease-[var(--ease-cockpit)]',
+                      active
+                        ? 'bg-white/[0.075] text-ink-hi shadow-[inset_2px_0_0_0_rgba(91,157,255,0.8),0_0_20px_-14px_rgba(91,157,255,0.9)]'
+                        : 'text-ink hover:bg-white/[0.04]',
                     )}
                   >
                     <span className={cn('shrink-0 transition-colors [&>svg]:h-3.5 [&>svg]:w-3.5', active ? 'text-accent' : 'text-ink-faint')}>
@@ -305,7 +308,7 @@ export function CommandPalette() {
                     <span className="min-w-0 flex-1 truncate text-[12.5px]">{item.label}</span>
                     {item.meta && <span className="mono shrink-0 text-[10px] text-ink-faint">{item.meta}</span>}
                     {item.hint && <Kbd>{item.hint}</Kbd>}
-                    {active && <ArrowRight className="h-3.5 w-3.5 shrink-0 text-accent" />}
+                    {active && <ArrowRight className="h-3.5 w-3.5 shrink-0 animate-[slide-left_.18s_var(--ease-out-quint)_both] text-accent" />}
                   </button>
                 )
               })}
@@ -403,7 +406,7 @@ export function ShortcutsSheet() {
         role="dialog"
         aria-modal="true"
         aria-label="Keyboard shortcuts"
-        className="relative w-full max-w-[700px] animate-[rise_240ms_var(--ease-cockpit)_both] overflow-hidden rounded-2xl border border-line-3 bg-surface-1/98 shadow-[0_50px_140px_-30px_rgba(0,0,0,1)]"
+        className="relative w-full max-w-[700px] animate-[pop_240ms_var(--ease-cockpit)_both] overflow-hidden rounded-2xl border border-line-3 bg-surface-1/98 shadow-[0_50px_140px_-30px_rgba(0,0,0,1),0_0_70px_-30px_rgba(91,157,255,0.45)]"
       >
         <div className="flex items-center justify-between border-b border-line-2 px-5 py-3.5">
           <div>

@@ -24,7 +24,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed inset-x-0 bottom-0 z-40 flex h-[58px] items-stretch border-t border-line-2 bg-deep/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-[58px] items-stretch border-t border-line-2 bg-deep/92 pb-[env(safe-area-inset-bottom)] shadow-[0_-14px_38px_-26px_rgba(0,0,0,1)] backdrop-blur-xl lg:hidden"
     >
       {items.slice(0, 2).map((it) => (
         <MobileItem key={it.id} {...it} active={isActive(location.pathname, it.href)} />
@@ -34,7 +34,7 @@ export function MobileNav() {
         <button
           onClick={() => setCreateOpen(true, 'mobile')}
           aria-label="Quick create"
-          className="relative -mt-5 grid h-12 w-12 place-items-center rounded-full border border-accent/40 bg-gradient-to-br from-accent to-accent-deep text-[#06101F] shadow-[0_10px_30px_-8px_rgba(91,157,255,0.9)] transition-transform duration-200 active:scale-95"
+          className="press relative -mt-5 grid h-12 w-12 place-items-center rounded-full border border-accent-bright/50 bg-[linear-gradient(160deg,#8CBCFF,#5B9DFF_45%,#2F6FD0)] text-[#05101F] shadow-[0_10px_30px_-8px_rgba(91,157,255,0.95),0_1px_0_0_rgba(255,255,255,0.4)_inset] transition-transform duration-[var(--duration-2)] ease-[var(--ease-cockpit)] active:scale-95"
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -46,7 +46,7 @@ export function MobileNav() {
 
       <button
         onClick={() => setCommandOpen(true)}
-        className="flex flex-1 flex-col items-center justify-center gap-1 text-ink-low transition-colors active:text-ink"
+        className="flex flex-1 flex-col items-center justify-center gap-1 text-ink-low transition-colors duration-[var(--duration-2)] hover:text-ink active:text-ink"
         aria-label="More navigation and search"
       >
         <MoreHorizontal className="h-[18px] w-[18px]" />
@@ -65,7 +65,12 @@ function MobileItem({ label, href, icon: Icon, active }: { label: string; href: 
     >
       <span className="relative">
         <Icon className="h-[18px] w-[18px]" />
-        {active && <span className="absolute -bottom-1.5 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-accent shadow-[0_0_6px_rgba(91,157,255,1)]" />}
+        {active && (
+          <>
+            <span className="absolute -bottom-1.5 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-accent shadow-[0_0_6px_rgba(91,157,255,1)]" />
+            <span className="absolute -top-2 left-1/2 h-8 w-8 -translate-x-1/2 rounded-full bg-accent/[0.12] blur-[10px]" aria-hidden />
+          </>
+        )}
       </span>
       <span className="text-[9.5px] font-medium">{label}</span>
     </Link>

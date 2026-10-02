@@ -241,12 +241,22 @@ export function Sparkline({
           <path d={path.area} fill={`url(#spark-${uid})`} />
         </>
       )}
-      <path d={path.line} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d={path.line}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="400"
+        style={{ ['--dash-from' as string]: '400', ['--dash-to' as string]: '0', animation: 'draw 900ms var(--ease-cockpit) both' }}
+      />
       <circle
         cx={width}
         cy={height - ((values[values.length - 1] - Math.min(...values)) / (Math.max(...values) - Math.min(...values) || 1)) * (height - 4) - 2}
-        r={1.6}
+        r={1.7}
         fill={color}
+        style={{ filter: `drop-shadow(0 0 4px ${color})` }}
       />
     </svg>
   )

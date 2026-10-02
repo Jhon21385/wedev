@@ -206,7 +206,7 @@ export function AssetsPage() {
       </div>
 
       {view === 'grid' ? (
-        <div className="grid gap-3 pb-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        <div className="stagger grid gap-3 pb-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {items.map((asset) => {
             const meta = KIND_META[asset.kind]
             const isStar = starred[asset.id] ?? asset.starred

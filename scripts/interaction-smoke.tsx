@@ -35,6 +35,9 @@ const matchMedia = (query: string) => ({
 g.matchMedia = matchMedia
 ;(dom.window as unknown as Record<string, unknown>).matchMedia = matchMedia
 dom.window.HTMLElement.prototype.scrollIntoView = () => undefined
+dom.window.HTMLElement.prototype.scrollTo = function scrollTo(this: HTMLElement, opts?: ScrollToOptions | number) {
+  this.scrollTop = typeof opts === 'number' ? opts : (opts?.top ?? 0)
+}
 Object.defineProperty(dom.window.HTMLElement.prototype, 'clientWidth', { value: 1440, configurable: true })
 Object.defineProperty(dom.window.HTMLElement.prototype, 'clientHeight', { value: 900, configurable: true })
 class Observer {

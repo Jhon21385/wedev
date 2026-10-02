@@ -68,7 +68,7 @@ export function AudiencePage() {
         meta={<FilterBar />}
       />
 
-      <div className="mb-3.5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="stagger mb-3.5 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard metricId="followers" value={totalFollowers} context={`across ${perPlatform.length} live platforms`} size="lg" />
         <MetricCard metricId="followersGained" value={gained} context={`${fmtNumber(lost)} unfollows · net ${fmtNumber(gained - lost)}`} color="#34D399" />
         <MetricCard

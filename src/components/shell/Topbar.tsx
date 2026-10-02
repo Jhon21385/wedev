@@ -24,8 +24,7 @@ export function Topbar() {
   const setCommandOpen = useApp((s) => s.setCommandOpen)
   const setCreateOpen = useApp((s) => s.setCreateOpen)
   const setShortcutsOpen = useApp((s) => s.setShortcutsOpen)
-  const toggleSidebar = useApp((s) => s.toggleSidebar)
-  const sidebarCollapsed = useApp((s) => s.sidebarCollapsed)
+  const setMobileNavOpen = useApp((s) => s.setMobileNavOpen)
   const recents = useApp((s) => s.recents)
 
   const crumbs = useMemo(() => {
@@ -46,11 +45,11 @@ export function Topbar() {
   }, [location.pathname, ds])
 
   return (
-    <header className="relative z-20 flex h-[52px] shrink-0 items-center gap-3 border-b border-line-2 bg-deep/70 px-3 backdrop-blur-xl lg:px-4">
+    <header className="relative z-20 flex h-[52px] shrink-0 items-center gap-3 border-b border-line-2 bg-deep/70 px-3 shadow-[0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-xl lg:px-4">
       <button
-        onClick={toggleSidebar}
-        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="grid h-8 w-8 place-items-center rounded-lg text-ink-mid transition-colors hover:bg-white/[0.055] hover:text-ink-hi lg:hidden"
+        onClick={() => setMobileNavOpen(true)}
+        aria-label="Open navigation"
+        className="grid h-8 w-8 place-items-center rounded-lg border border-transparent text-ink-mid transition-[background-color,border-color,color,transform] duration-[var(--duration-2)] hover:border-line-2 hover:bg-white/[0.055] hover:text-ink-hi active:translate-y-px lg:hidden"
       >
         <Menu className="h-4 w-4" />
       </button>
@@ -91,8 +90,8 @@ export function Topbar() {
       <button
         onClick={() => setCommandOpen(true)}
         className={cn(
-          'group ml-auto hidden h-8 w-[248px] shrink-0 items-center gap-2 rounded-lg border border-line-2 bg-white/[0.026] px-2.5 transition-all duration-200',
-          'hover:border-line-3 hover:bg-white/[0.045] xl:flex',
+          'group ml-auto hidden h-8 w-[248px] shrink-0 items-center gap-2 rounded-lg border border-line-2 bg-white/[0.026] px-2.5 transition-all duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
+          'hover:w-[268px] hover:border-accent/30 hover:bg-white/[0.05] hover:shadow-[0_0_24px_-12px_rgba(91,157,255,0.6)] xl:flex',
         )}
       >
         <Search className="h-3.5 w-3.5 text-ink-faint transition-colors group-hover:text-ink-low" />
@@ -111,7 +110,7 @@ export function Topbar() {
             <button
               onClick={toggle}
               aria-expanded={open}
-              className="ml-0.5 inline-flex h-7.5 items-center gap-1.5 rounded-lg border border-accent/28 bg-accent/[0.1] px-2.5 text-[12px] font-medium text-accent-ink transition-all duration-200 hover:border-accent/50 hover:bg-accent/[0.17]"
+              className="refract press ml-0.5 inline-flex h-7.5 items-center gap-1.5 overflow-hidden rounded-lg border border-accent/28 bg-accent/[0.1] px-2.5 text-[12px] font-medium text-accent-ink transition-all duration-[var(--duration-2)] hover:border-accent/50 hover:bg-accent/[0.17] hover:shadow-[0_0_22px_-10px_rgba(91,157,255,0.9)]"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Create</span>

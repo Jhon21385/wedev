@@ -51,7 +51,7 @@ export function ChartTooltip({
   return (
     <div
       className={cn(
-        'pointer-events-none min-w-[186px] rounded-lg border border-line-3 bg-[#0B0D11]/96 px-3 py-2.5 shadow-[0_20px_50px_-14px_rgba(0,0,0,0.98)] backdrop-blur-xl',
+        'pointer-events-none min-w-[186px] animate-[pop_.18s_var(--ease-cockpit)_both] rounded-lg border border-line-3 bg-[#0B0D11]/96 px-3 py-2.5 shadow-[0_20px_50px_-14px_rgba(0,0,0,0.98)] backdrop-blur-xl',
         className,
       )}
       role="tooltip"

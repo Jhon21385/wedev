@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useApp } from '@/store/app'
 import { useDataset, useHotkeys } from '@/lib/hooks'
@@ -43,6 +43,8 @@ export function App() {
   const toggleSidebar = useApp((s) => s.toggleSidebar)
   const setSidebarCollapsed = useApp((s) => s.setSidebarCollapsed)
   const closePanel = useApp((s) => s.closePanel)
+  const mobileNavOpen = useApp((s) => s.mobileNavOpen)
+  const setMobileNavOpen = useApp((s) => s.setMobileNavOpen)
   const rightPanel = useApp((s) => s.rightPanel)
   const openPanel = useApp((s) => s.openPanel)
   const motion = useApp((s) => s.motion)
@@ -76,6 +78,18 @@ export function App() {
       if (item) visit({ id: item.id, title: item.title, href: `/content/${item.id}` })
     }
   }, [location.pathname, ds, visit])
+
+  /* --- route change: close the slide-over, return to the top -------------- */
+  const scroller = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    setMobileNavOpen(false)
+    const el = scroller.current
+    if (!el) return
+    const reduce = document.documentElement.dataset.motion === 'reduced'
+    // `scrollTo` is missing in older embedded webviews and in the JSDOM harness.
+    if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+    else el.scrollTop = 0
+  }, [location.pathname, setMobileNavOpen])
 
   /* --- global shortcuts -------------------------------------------------- */
   const hotkeys = useMemo(
@@ -145,9 +159,16 @@ export function App() {
 
       <div className="relative flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main id="main" className="scroll-fade-y min-h-0 flex-1 overflow-y-auto overscroll-contain" tabIndex={-1}>
+        <main
+          id="main"
+          ref={scroller}
+          className="scroll-fade-y min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          tabIndex={-1}
+        >
           <ErrorBoundary label={titleForPath(location.pathname)} onRecover={() => navigate('/')}>
           <Suspense fallback={<PageSkeleton />}>
+            {/* Keyed so each navigation plays the arrival transition. */}
+            <div key={location.pathname} className="animate-[route-in_.34s_var(--ease-out-quint)_both]">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/content" element={<ContentDatabase />} />
@@ -166,10 +187,25 @@ export function App() {
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </div>
           </Suspense>
           </ErrorBoundary>
         </main>
       </div>
+
+      {/* ---- slide-over navigation (phones + tablets) ------------------- */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            aria-label="Close navigation"
+            onClick={() => setMobileNavOpen(false)}
+            className="absolute inset-0 animate-[fade-in_.18s_var(--ease-cockpit)_both] bg-black/65 backdrop-blur-[3px]"
+          />
+          <div className="absolute inset-y-0 left-0 animate-[nav-in_.3s_var(--ease-out-quint)_both] shadow-[24px_0_60px_-30px_rgba(0,0,0,1)]">
+            <Sidebar expanded />
+          </div>
+        </div>
+      )}
 
       <ContextPanel />
 

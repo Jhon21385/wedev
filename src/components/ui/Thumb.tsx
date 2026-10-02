@@ -72,6 +72,13 @@ export function Thumb({
           <circle cx={blobX} cy={blobY} r="44" fill="none" stroke={a} strokeOpacity={0.14} strokeWidth="0.4" />
         </svg>
       )}
+      {/* Faint scanlines: reads as captured footage rather than flat colour. */}
+      <span
+        className="absolute inset-0 opacity-[0.16] mix-blend-overlay"
+        style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px)',
+        }}
+      />
       <span
         className="absolute inset-0"
         style={{ background: 'linear-gradient(180deg, rgba(9,9,11,0) 34%, rgba(9,9,11,0.86) 100%)' }}

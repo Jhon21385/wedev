@@ -18,10 +18,12 @@ import { useDismiss } from '@/lib/hooks'
    ========================================================================== */
 
 const FIELD_BASE =
-  'w-full bg-white/[0.028] border border-line-2 rounded-lg text-ink-hi placeholder:text-ink-faint ' +
-  'transition-[border-color,background-color,box-shadow] duration-200 ease-[var(--ease-cockpit)] ' +
+  'w-full bg-white/[0.026] border border-line-2 rounded-lg text-ink-hi placeholder:text-ink-faint ' +
+  'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.018)] ' +
+  'transition-[border-color,background-color,box-shadow] duration-[var(--duration-2)] ease-[var(--ease-cockpit)] ' +
   'hover:border-line-3 hover:bg-white/[0.04] ' +
-  'focus:outline-none focus:border-accent/55 focus:bg-white/[0.045] focus:shadow-[0_0_0_3px_rgba(91,157,255,0.13)] ' +
+  'focus:outline-none focus:border-accent/55 focus:bg-white/[0.048] ' +
+  'focus:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02),0_0_0_3px_rgba(91,157,255,0.14),0_0_22px_-8px_rgba(91,157,255,0.7)] ' +
   'disabled:opacity-45 disabled:pointer-events-none'
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { icon?: ReactNode; suffix?: ReactNode; invalid?: boolean }>(

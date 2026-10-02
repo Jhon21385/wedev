@@ -54,9 +54,10 @@ export function MetricCard({
       aria-pressed={onClick ? !!active : undefined}
       className={cn(
         'group relative flex min-w-0 flex-col overflow-hidden rounded-xl border bg-panel text-left',
-        'transition-[border-color,box-shadow,background-color] duration-250 ease-[var(--ease-cockpit)]',
+        'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.022)]',
+        'transition-[border-color,box-shadow,background-color,transform] duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
         active ? 'border-accent/40 glow-2' : 'border-line-2',
-        onClick && 'hover:border-line-3 hover:bg-surface-1',
+        onClick && 'press hover:-translate-y-px hover:border-line-3 hover:bg-surface-1 hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03),0_14px_30px_-24px_rgba(0,0,0,1)]',
         size === 'sm' ? 'p-3' : size === 'lg' ? 'p-4' : 'p-3.5',
         className,
       )}
@@ -79,8 +80,8 @@ export function MetricCard({
         <div className="min-w-0">
           <p
             className={cn(
-              'tnum font-semibold leading-none tracking-[-0.02em] text-ink-hi',
-              size === 'sm' ? 'text-[17px]' : size === 'lg' ? 'text-[30px]' : 'text-[23px]',
+              'num leading-none',
+              size === 'sm' ? 'text-[17px]' : size === 'lg' ? 'text-[31px]' : 'text-[23px]',
             )}
           >
             {fmtMetricValue(metricId, value)}
@@ -99,8 +100,13 @@ export function MetricCard({
 
       {/* baseline meter: share of the panel's own scale */}
       <span
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px opacity-0 transition-opacity duration-[var(--duration-3)] group-hover:opacity-40"
         style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+        aria-hidden
+      />
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px scale-x-0 transition-transform duration-[var(--duration-4)] ease-[var(--ease-out-quint)] group-hover:scale-x-100"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, boxShadow: `0 0 12px ${accent}` }}
         aria-hidden
       />
     </Tag>
@@ -138,7 +144,7 @@ export function MetricHero({
         {action}
       </div>
       <div className="mt-2 flex flex-wrap items-baseline gap-2.5">
-        <span className="tnum text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink-hi">{value}</span>
+        <span className="num text-[36px] leading-none">{value}</span>
         {unit && <span className="text-[12px] text-ink-low">{unit}</span>}
         {delta !== undefined && <Delta value={delta} size="md" className="mb-0.5" />}
       </div>
@@ -163,7 +169,7 @@ export function MetricInline({
 }) {
   return (
     <div className={cn('flex items-baseline gap-2', align === 'right' && 'justify-end', className)}>
-      <span className="tnum text-[12.5px] font-medium text-ink-hi" title={fmtMetricFull(metricId, value)}>
+      <span className="tnum text-[12.5px] font-medium tracking-[-0.01em] text-ink-hi" title={fmtMetricFull(metricId, value)}>
         {fmtMetricValue(metricId, value)}
       </span>
       {delta !== undefined && <Delta value={delta} size="xs" suffix={undefined} />}
@@ -194,8 +200,10 @@ export function PulseChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-250',
-        active ? 'border-accent/35 bg-accent/[0.07]' : 'border-line-2 bg-panel hover:border-line-3 hover:bg-surface-1',
+        'group flex min-w-0 flex-1 flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-[var(--duration-2)] ease-[var(--ease-cockpit)]',
+        active
+          ? 'border-accent/35 bg-accent/[0.07] glow-1'
+          : 'border-line-2 bg-panel shadow-[inset_0_1px_0_0_rgba(255,255,255,0.022)] hover:-translate-y-px hover:border-line-3 hover:bg-surface-1',
       )}
     >
       <span className="flex items-center gap-1.5">
@@ -203,7 +211,7 @@ export function PulseChip({
         <span className="truncate text-[10.5px] font-medium text-ink-mid">{label}</span>
       </span>
       <span className="flex items-end justify-between gap-2">
-        <span className="tnum text-[16px] font-semibold leading-none text-ink-hi">{value}</span>
+        <span className="num text-[16px] leading-none">{value}</span>
         <Sparkline values={spark} color={color} width={46} height={18} filled={active} />
       </span>
       <Delta value={delta} size="xs" suffix={undefined} />

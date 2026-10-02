@@ -46,6 +46,9 @@ interface AppState {
   sidebarCollapsed: boolean
   toggleSidebar: () => void
   setSidebarCollapsed: (v: boolean) => void
+  /** Slide-over navigation for phones and tablets, where the rail is hidden. */
+  mobileNavOpen: boolean
+  setMobileNavOpen: (v: boolean) => void
 
   rightPanel: RightPanelKind
   rightPanelPayload: { contentId?: string; ideaId?: string; label?: string; platform?: PlatformId; topicId?: string }
@@ -118,6 +121,8 @@ export const useApp = create<AppState>((set, get) => ({
   sidebarCollapsed: false,
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
+  mobileNavOpen: false,
+  setMobileNavOpen: (v) => set({ mobileNavOpen: v }),
 
   rightPanel: null,
   rightPanelPayload: {},

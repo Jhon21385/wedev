@@ -266,9 +266,12 @@ export function DataTable<T extends { id: string }>({
                       setOverIndex(null)
                     }}
                     className={cn(
-                      'group/row grid items-center border-b border-line-1 transition-colors duration-150',
+                      'group/row grid items-center border-b border-line-1',
+                      'transition-[background-color,box-shadow] duration-[var(--duration-1)] ease-[var(--ease-cockpit)]',
                       onRowClick && 'cursor-pointer',
-                      selected ? 'bg-accent/[0.075]' : 'hover:bg-white/[0.028]',
+                      selected
+                        ? 'bg-accent/[0.075] shadow-[inset_2px_0_0_0_rgba(91,157,255,0.75)]'
+                        : 'hover:bg-white/[0.032] hover:shadow-[inset_2px_0_0_0_rgba(91,157,255,0.4)]',
                       isDragging && 'opacity-40',
                       isOver && reorderable && 'shadow-[inset_0_2px_0_0_var(--color-accent)]',
                     )}
