@@ -32,8 +32,10 @@ Cross-cutting: ⌘K command palette, `/` search, `C` create, `I` idea, `A` analy
 ```
 src/
   data/          domain model, registry, taxonomy, deterministic seeded dataset
+                 api.ts — the API boundary (reads, writes, errors, transport mode)
   analytics/     periods + the single query layer every screen reads
   store/         Zustand app state (filters, overlays, optimistic patches)
+  lib/           formatters, hooks, useApi (loading / cached / error / retry)
   app/           router shell, navigation, responsive chrome
   components/    design system: ui/, charts/, metrics/, shell/
   pages/         one module per screen
@@ -41,6 +43,8 @@ scripts/         verification harnesses (see below)
 ```
 
 Nothing is hardcoded in a component. Metric definitions, labels, colours, formatters, content types, statuses and taxonomy live in `src/data/registry.ts` and `src/data/taxonomy.ts`; every chart calls the query layer in `src/analytics/queries.ts`, which reads one deterministic dataset (`src/data/seed/dataset.ts`, seeded `mulberry32`, 700 days of metric history and per-content daily series). Charts and tables therefore reconcile by construction — a drill-down always agrees with the aggregate it came from.
+
+`src/data/api.ts` is the only place that knows how data arrives. Reads return provenance (live vs cached, latency, timestamp), writes are optimistic-first with an explicit confirmation, and failures are typed errors carrying a retryable flag and a human-readable hint — so every screen can show the same loading, degraded and retry states without inventing its own. `src/lib/useApi.ts` turns that into `{ data, cached, loading, error, retry }`. Swapping the local transport for HTTP means replacing one function.
 
 Switching scope never lies about what it is showing: when content filters are active, totals come from the daily series of the matching content objects; otherwise they come from the platform aggregate. The header states which mode you are in.
 
@@ -68,3 +72,5 @@ The render harness catches what a type-check cannot: undefined access in derived
 - Motion 200–300 ms and only to communicate change, origin, activity or attention; fully disabled by reduced-motion.
 - No glassmorphism, neon, fake 3D, particle fields or decorative charts. No pie charts. Cards are meaningful containers, not decoration.
 - Dense but calm: borders, spacing and typography carry the hierarchy.
+- Tokens, not literals: four durations, three easing curves, a fluid display scale and one hairline grid drive every surface — `src/index.css` is the single stylesheet.
+- Materials separate by a 1px inner highlight, not by heavier borders; hover lifts, pressed states move 0.5px, and the only sweeping light in the product is on the primary action.
