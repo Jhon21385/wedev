@@ -39,12 +39,6 @@
   --color-line-3: rgba(255, 255, 255, 0.115);
   --color-line-4: rgba(255, 255, 255, 0.2);
 
-  /* Overlay steps for hover / pressed states on any surface. */
-  --color-raise-1: rgba(255, 255, 255, 0.032);
-  --color-raise-2: rgba(255, 255, 255, 0.055);
-  --color-raise-3: rgba(255, 255, 255, 0.085);
-  --color-sink: rgba(0, 0, 0, 0.24);
-
   /* --- Accent (electric / icy blue) --------------------------------------- */
   --color-accent: #5b9dff;
   --color-accent-bright: #8cbcff;
@@ -78,8 +72,6 @@
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --text-4xs: 0.5625rem; /*  9px — micro labels inside chips */
-  --text-4xs--line-height: 0.75rem;
   --text-3xs: 0.625rem; /* 10px — column headers, eyebrow labels */
   --text-3xs--line-height: 0.875rem;
   --text-2xs: 0.6875rem; /* 11px — metadata, captions */
@@ -97,7 +89,7 @@
   --text-display-3--letter-spacing: -0.02em;
 
   /* --- Motion -------------------------------------------------------------
-     Four durations and four curves, used consistently. Nothing in the product
+     Four durations and three curves, used consistently. Nothing in the product
      animates longer than 340ms except ambient loops that report live state. */
   --duration-1: 140ms;
   --duration-2: 200ms;
@@ -107,25 +99,7 @@
   --ease-cockpit: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-snap: cubic-bezier(0.34, 1.4, 0.5, 1);
   --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
 
-  --animate-fade-up: fade-up 0.42s var(--ease-cockpit) both;
-  --animate-fade-in: fade-in 0.3s var(--ease-cockpit) both;
-  --animate-scale-in: scale-in 0.22s var(--ease-cockpit) both;
-  --animate-pop: pop 0.24s var(--ease-snap) both;
-  --animate-route-in: route-in 0.34s var(--ease-out-quint) both;
-  --animate-sheen: sheen 1.6s linear infinite;
-  --animate-pulse-soft: pulse-soft 2.6s ease-in-out infinite;
-  --animate-breathe: breathe 3.4s ease-in-out infinite;
-  --animate-sweep: sweep 2.8s var(--ease-cockpit) infinite;
-  --animate-rise: rise 0.55s var(--ease-cockpit) both;
-  --animate-blip: blip 2.2s ease-in-out infinite;
-  --animate-ring: ring-out 2.4s var(--ease-out-quint) infinite;
-  --animate-draw: draw 0.9s var(--ease-cockpit) both;
-  --animate-toast-in: toast-in 0.32s var(--ease-cockpit) both;
-  --animate-slide-left: slide-left 0.3s var(--ease-out-quint) both;
-  --animate-nav-in: nav-in 0.3s var(--ease-out-quint) both;
-  --animate-bar-grow: bar-grow 0.5s var(--ease-out-quint) both;
 }
 
 /* ============================================================================
@@ -665,7 +639,7 @@
     rgba(255, 255, 255, 0.02) 100%
   );
   background-size: 220% 100%;
-  animation: var(--animate-sheen);
+  animation: sheen 1.6s linear infinite;
 }
 
 @utility no-scrollbar {
@@ -731,19 +705,6 @@
 @utility drag-ghost {
   opacity: 0.42;
   filter: saturate(0.7);
-}
-
-/* Live indicator: dot + expanding halo. */
-@utility live-dot {
-  position: relative;
-  &::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 99px;
-    border: 1px solid currentColor;
-    animation: var(--animate-ring);
-  }
 }
 
 /* ============================================================================

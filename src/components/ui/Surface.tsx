@@ -105,7 +105,7 @@ export function SectionHeader({
             <span className="cell-label text-accent/90">{label}</span>
           </div>
         )}
-        {title && <h2 className="text-[15px] font-semibold tracking-[-0.018em] text-ink-hi">{title}</h2>}
+        {title && <h2 className="title-3">{title}</h2>}
         {hint && <p className="mt-1 max-w-[65ch] text-[12px] leading-relaxed text-ink-low">{hint}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}

@@ -23,7 +23,7 @@ export function NotFound() {
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-line-3 bg-white/[0.03]">
             <Compass className="h-6 w-6 text-ink-low" />
           </span>
-          <h1 className="mt-5 text-[22px] font-semibold tracking-[-0.02em] text-ink-hi">This route does not exist</h1>
+          <h1 className="title-2 mt-5">This route does not exist</h1>
           <p className="mt-2 text-[12.5px] leading-relaxed text-ink-low">
             The workspace has a fixed map: dashboard, content, calendar, research, analytics, audience, revenue, assets, brand and settings.
             Everything else lives inside a record.

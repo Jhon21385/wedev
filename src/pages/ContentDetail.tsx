@@ -181,7 +181,7 @@ export function ContentDetail() {
                   </Badge>
                 )}
               </div>
-              <h1 className="mt-2 max-w-[70ch] text-[20px] font-semibold leading-tight tracking-[-0.022em] text-ink-hi">{content.title}</h1>
+              <h1 className="title-2 mt-2 max-w-[46ch]">{content.title}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-ink-low">
                 <span className="flex items-center gap-1.5">
                   {content.platforms.map((p) => (

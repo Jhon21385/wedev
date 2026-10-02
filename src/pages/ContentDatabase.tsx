@@ -424,7 +424,7 @@ function BoardView({
         <span aria-hidden>·</span>
         <span>drag a card to change its stage — status updates optimistically with undo</span>
       </p>
-      <div className="overflow-x-auto">
+      <div className="scroll-fade-x overflow-x-auto">
       <div className="flex min-h-[520px] gap-2.5" style={{ width: `${lanes.length * 254}px` }}>
         {lanes.map((lane) => (
           <div
@@ -711,7 +711,7 @@ function TimelineView({ rows, onNavigate }: { rows: ReturnType<typeof scopeConte
           />
         }
       />
-      <div className="overflow-x-auto">
+      <div className="scroll-fade-x overflow-x-auto">
         <div className="min-w-[860px]">
           <div className="relative flex border-b border-line-2 bg-white/[0.014]">
             <div className="w-[280px] shrink-0 px-3 py-1.5">

@@ -968,7 +968,7 @@ function Section({ id, title, hint, children }: { id: string; title: string; hin
   return (
     <section id={id} className="scroll-mt-[92px] border-t border-line-2 py-5 first:border-t-0 first:pt-0">
       <header className="mb-3.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-[15px] font-semibold tracking-[-0.015em] text-ink-hi">{title}</h2>
+        <h2 className="title-3">{title}</h2>
         <p className="text-[11.5px] text-ink-low">{hint}</p>
       </header>
       {children}
