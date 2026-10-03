@@ -45,7 +45,8 @@ import { Segmented } from '@/components/ui/Field'
 import { FilterBar } from '@/components/shell/FilterBar'
 import { MetricTrend, Sparkline } from '@/components/charts/LineArea'
 import { MetricBars, RankedBars, ShareBar } from '@/components/charts/Bars'
-import { ActivityGrid, BubbleMatrix, CalendarHeat, Funnel, Gauge, HeatGrid, RetentionBand, TreemapViz, Waterfall } from '@/components/charts/Special'
+import { ActivityGrid, BubbleMatrix, CalendarHeat, Funnel, Gauge, HeatGrid, RadarViz, RetentionBand, TreemapViz, Waterfall } from '@/components/charts/Special'
+import { ChartPanel, chartData, type ChartData, Legend } from '@/components/charts/kit'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 
 /* ============================================================================
@@ -78,6 +79,7 @@ export function AnalyticsPage() {
   const openPanel = useApp((s) => s.openPanel)
   const [params, setParams] = useSearchParams()
   const [compare, setCompare] = useState<'none' | 'previous' | 'year'>('previous')
+  const [radarVisible, setRadarVisible] = useState<string[]>([])
   const [active, setActive] = useState('overview')
   const railRef = useRef<HTMLDivElement>(null)
 
@@ -93,6 +95,323 @@ export function AnalyticsPage() {
   const content = useMemo(() => contentRows(ds, filters), [ds, filters])
   const heat = useMemo(() => calendarHeatmap(ds, filters, 27), [ds, filters])
   const activity = useMemo(() => activityProfile(ds, filters), [ds, filters])
+
+  /* Every chart on this page is backed by the same rows it draws, so the
+     "show as table" view and the screen-reader summary can never drift. */
+  const trendData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Bucket' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'reach', label: 'Reach', align: 'right' },
+          { key: 'engagements', label: 'Engagements', align: 'right' },
+        ],
+        trends.rows.map((r) => ({ label: r.label, views: r.views, reach: r.reach, engagements: r.engagements })),
+        { unit: `${trends.granularity} bucket` },
+      ),
+    [trends],
+  )
+
+  const growthSeries = useMemo(() => {
+    const keys = ['reach', 'watchMinutes', 'followersGained'] as const
+    const labels: Record<string, string> = { reach: 'Reach', watchMinutes: 'Watch time', followersGained: 'Followers gained' }
+    const out: Record<string, ChartData> = {}
+    for (const k of keys) {
+      out[k] = chartData(
+        [
+          { key: 'label', label: 'Bucket' },
+          { key: k, label: labels[k], align: 'right', format: (v: number) => (k === 'watchMinutes' ? fmtDuration(v) : fmtNumber(v)) },
+        ],
+        trends.rows.map((r) => ({ label: r.label, [k]: r[k] })),
+        { unit: `${trends.granularity} bucket` },
+      )
+    }
+    return out
+  }, [trends])
+
+  const engagementMixData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Bucket' },
+          { key: 'likes', label: 'Likes', align: 'right' },
+          { key: 'comments', label: 'Comments', align: 'right' },
+          { key: 'shares', label: 'Shares', align: 'right' },
+          { key: 'saves', label: 'Saves', align: 'right' },
+        ],
+        trends.rows.map((r) => ({ label: r.label, likes: r.likes, comments: r.comments, shares: r.shares, saves: r.saves })),
+        { unit: 'bucket', caption: 'Engagement by signal type' },
+      ),
+    [trends],
+  )
+
+  const engagementRateData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Bucket' },
+          { key: 'engagementRate', label: 'Engagement rate', align: 'right', format: (v: number) => `${v.toFixed(2)}%` },
+        ],
+        trends.rows.map((r) => ({ label: r.label, engagementRate: Number(r.engagementRate.toFixed(2)) })),
+        { unit: 'bucket' },
+      ),
+    [trends],
+  )
+
+  const retentionData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'pct', label: 'Position', format: (v: number) => `${v}%` },
+          { key: 'value', label: 'Still watching', align: 'right', format: (v: number) => `${v}%` },
+          { key: 'best', label: 'Best decile', align: 'right', format: (v: number) => `${v}%` },
+          { key: 'worst', label: 'Worst decile', align: 'right', format: (v: number) => `${v}%` },
+        ],
+        retention.map((p) => ({ pct: p.pct, value: p.value, best: p.best, worst: p.worst })),
+        { unit: 'point', caption: 'Aggregate retention curve with best and worst deciles' },
+      ),
+    [retention],
+  )
+
+  const formatRetentionData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Format' },
+          { key: 'retention', label: 'Completion', align: 'right', format: (v: number) => `${Math.round(v * 100)}%` },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+        ],
+        formats
+          .filter((f) => f.pieces > 0)
+          .map((f) => ({ name: f.name, retention: f.retention, pieces: f.pieces })),
+        { unit: 'format' },
+      ),
+    [formats],
+  )
+
+  const topicTreemapData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Topic' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+          { key: 'avgViews', label: 'Avg views', align: 'right' },
+        ],
+        topics.slice(0, 12).map((t) => ({ name: t.name, views: t.views, pieces: t.pieces, avgViews: Math.round(t.avgViews) })),
+        { unit: 'topic', caption: 'Topic treemap — area is views' },
+      ),
+    [topics],
+  )
+
+  const topicEfficiencyData = useMemo(() => {
+    const rows = [...topics].sort((a, b) => b.revenuePerHour - a.revenuePerHour || b.views - a.views).slice(0, 9)
+    return chartData(
+      [
+        { key: 'name', label: 'Topic' },
+        { key: 'views', label: 'Views', align: 'right' },
+        { key: 'effortHours', label: 'Hours', align: 'right', format: (v: number) => `${Math.round(v)}h` },
+        { key: 'viewsPerHour', label: 'Views / hour', align: 'right' },
+        { key: 'engagementRate', label: 'Eng. rate', align: 'right', format: (v: number) => `${v.toFixed(2)}%` },
+      ],
+      rows.map((t) => ({
+        name: t.name,
+        views: t.views,
+        effortHours: t.effortHours,
+        viewsPerHour: t.effortHours ? Math.round(t.views / t.effortHours) : t.views,
+        engagementRate: Number(t.engagementRate.toFixed(2)),
+      })),
+      { unit: 'topic', caption: 'Views earned per production hour by topic' },
+    )
+  }, [topics])
+
+  const formatCompareData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Format' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'viewsPerHour', label: 'Views / hour', align: 'right' },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+          { key: 'effort', label: 'Avg hours', align: 'right', format: (v: number) => `${v.toFixed(1)}h` },
+        ],
+        formats.map((f) => ({ name: f.name, views: f.views, viewsPerHour: Math.round(f.viewsPerHour), pieces: f.pieces, effort: f.effort })),
+        { unit: 'format', caption: 'Format comparison, sorted by views per production hour' },
+      ),
+    [formats],
+  )
+
+  /* Format capability profile. Six axes, each normalised against the strongest
+     format on that axis, so the shape is comparable rather than the scale. */
+  const RADAR_AXES = [
+    { id: 'reach', label: 'Reach' },
+    { id: 'engagementRate', label: 'Engagement' },
+    { id: 'retention', label: 'Retention' },
+    { id: 'followersGained', label: 'Followers' },
+    { id: 'revenue', label: 'Revenue' },
+    { id: 'efficiency', label: 'Efficiency' },
+  ]
+
+  const radarSeries = useMemo(() => {
+    const colours = ['#5B9DFF', '#A78BFA', '#34D399']
+    const top = formats.slice(0, 3)
+    const maxes = Object.fromEntries(
+      RADAR_AXES.map((a) => {
+        const key = a.id === 'efficiency' ? 'viewsPerHour' : a.id
+        return [a.id, Math.max(...formats.map((f) => Number((f as unknown as Record<string, number>)[key] ?? 0)), 1)]
+      }),
+    )
+    return top.map((f, i) => ({
+      id: f.id,
+      label: f.name,
+      color: colours[i % colours.length],
+      values: RADAR_AXES.map((a) => {
+        const key = a.id === 'efficiency' ? 'viewsPerHour' : a.id
+        const v = Number((f as unknown as Record<string, number>)[key] ?? 0)
+        return Math.max(0.04, Math.min(1, v / maxes[a.id]))
+      }),
+    }))
+  }, [formats])
+
+  const radarData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Format' },
+          ...RADAR_AXES.map((a) => ({ key: a.id, label: a.label, align: 'right' as const, format: (v: number) => v.toFixed(3) })),
+        ],
+        formats.slice(0, 3).map((f) => {
+          const row: Record<string, string | number> = { name: f.name }
+          const series = radarSeries.find((r) => r.id === f.id)
+          RADAR_AXES.forEach((a, ai) => (row[a.id] = Number((series?.values[ai] ?? 0).toFixed(3))))
+          return row
+        }),
+        { unit: 'format', caption: 'Format capability profile, normalised per axis' },
+      ),
+    [formats, radarSeries],
+  )
+
+  const matrixData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'title', label: 'Content' },
+          { key: 'platform', label: 'Platform' },
+          { key: 'effort', label: 'Effort (h)', align: 'right' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'reach', label: 'Reach', align: 'right' },
+          { key: 'efficiency', label: 'Reach / hour', align: 'right' },
+        ],
+        roi.map((r) => ({
+          title: r.title,
+          platform: platformById(r.platform).name,
+          effort: r.effort,
+          views: r.views,
+          reach: r.reach,
+          efficiency: r.efficiency,
+        })),
+        { unit: 'content item', caption: 'Impact versus effort for every piece in scope' },
+      ),
+    [roi],
+  )
+
+  const funnelData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Stage' },
+          { key: 'value', label: 'Volume', align: 'right' },
+          { key: 'share', label: 'Share of impressions', align: 'right', format: (v: number) => `${v.toFixed(2)}%` },
+          { key: 'stepRate', label: 'Carried forward', align: 'right', format: (v: number) => `${v.toFixed(1)}%` },
+        ],
+        funnel.map((s) => ({ label: s.label, value: s.value, share: s.share, stepRate: s.stepRate })),
+        { unit: 'stage', caption: 'Attention funnel from impressions to follows' },
+      ),
+    [funnel],
+  )
+
+  const heatData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'date', label: 'Date' },
+          { key: 'value', label: 'Views', align: 'right' },
+          { key: 'published', label: 'Published', align: 'right' },
+        ],
+        heat.map((c) => ({ date: fmtDateShort(c.date), value: c.value, published: c.published })),
+        { unit: 'day', caption: 'Publishing calendar heat across 27 weeks' },
+      ),
+    [heat],
+  )
+
+  const activityData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'day', label: 'Weekday' },
+          ...activity.hours.map((h) => ({ key: String(h), label: `${h}:00`, align: 'right' as const })),
+        ],
+        activity.rows.map((r) => {
+          const row: Record<string, string | number> = { day: r.day }
+          activity.hours.forEach((h, hi) => (row[String(h)] = r.values[hi] ?? 0))
+          return row
+        }),
+        { unit: 'weekday', caption: 'Engagement intensity by weekday and hour' },
+      ),
+    [activity],
+  )
+
+  const waterfallData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Month' },
+          { key: 'value', label: 'Amount', align: 'right', format: (v: number) => fmtCurrency(v) },
+        ],
+        revenueWaterfall(ds).map((r) => ({ label: r.label, value: r.value })),
+        { unit: 'month', caption: 'Monthly revenue, expenses and net' },
+      ),
+    // revenueWaterfall reads the live filter state, so it recomputes with it.
+    [ds, filters],
+  )
+
+  const effortTierData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'tier', label: 'Effort tier' },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+          { key: 'hours', label: 'Hours', align: 'right' },
+          { key: 'reach', label: 'Reach', align: 'right' },
+          { key: 'reachPerHour', label: 'Reach / hour', align: 'right' },
+        ],
+        ['Light', 'Standard', 'Heavy'].map((tier) => {
+          const rows = roi.filter((r) => r.effortTier === tier && r.views > 0)
+          const reach = rows.reduce((s, r) => s + r.reach, 0)
+          const hours = rows.reduce((s, r) => s + r.effort, 0)
+          return { tier, pieces: rows.length, hours, reach, reachPerHour: hours ? Math.round(reach / hours) : 0 }
+        }),
+        { unit: 'tier', caption: 'Reach per production hour by effort tier' },
+      ),
+    [roi],
+  )
+
+  const healthData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Pillar' },
+          { key: 'display', label: 'Measured' },
+          { key: 'value', label: 'Score', align: 'right', format: (v: number) => `${Math.round(v)}/100` },
+          { key: 'target', label: 'Target' },
+          { key: 'status', label: 'Status' },
+        ],
+        health.map((h) => ({ label: h.label, display: h.display, value: h.value, target: h.target, status: h.status })),
+        { unit: 'pillar', caption: 'Creator health pillars measured against their targets' },
+      ),
+    [health],
+  )
 
   /* Per-platform series for stacked comparison bars. */
   const platformSeries = useMemo(() => {
@@ -112,6 +431,23 @@ export function AnalyticsPage() {
     })
     return rows
   }, [ds, filters])
+
+  const platformStackData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Bucket' },
+          ...LIVE_PLATFORMS.map((p) => ({ key: p.id, label: p.name, align: 'right' as const })),
+        ],
+        platformSeries.map((r) => {
+          const row: Record<string, string | number> = { label: String(r.label ?? '') }
+          for (const p of LIVE_PLATFORMS) row[p.id] = Number((r as Record<string, number>)[p.id] ?? 0)
+          return row
+        }),
+        { unit: 'bucket', caption: 'Views per platform per bucket' },
+      ),
+    [platformSeries],
+  )
 
   /* Scroll spy for the section rail. */
   useEffect(() => {
@@ -318,19 +654,21 @@ export function AnalyticsPage() {
             }
           />
           <div className="p-4">
-            <MetricTrend
-              rows={trends.rows as unknown as Parameters<typeof MetricTrend>[0]['rows']}
-              mode="area"
-              compareKey={compare === 'none' ? undefined : compare === 'previous' ? 'prevViews' : 'yearViews'}
-              compareLabel={compare === 'previous' ? 'Previous period' : 'Last year'}
-              series={[
-                { id: 'views', type: 'area' },
-                { id: 'reach', type: 'area' },
-                { id: 'engagements', type: 'line', axis: 'right' },
-              ]}
-              height={320}
-              onPointClick={(row) => openPanel('analytics', { label: String(row.label ?? '') })}
-            />
+            <ChartPanel bare data={trendData}>
+              <MetricTrend
+                rows={trends.rows as unknown as Parameters<typeof MetricTrend>[0]['rows']}
+                mode="area"
+                compareKey={compare === 'none' ? undefined : compare === 'previous' ? 'prevViews' : 'yearViews'}
+                compareLabel={compare === 'previous' ? 'Previous period' : 'Last year'}
+                series={[
+                  { id: 'views', type: 'area' },
+                  { id: 'reach', type: 'area' },
+                  { id: 'engagements', type: 'line', axis: 'right' },
+                ]}
+                height={320}
+                onPointClick={(row) => openPanel('analytics', { label: String(row.label ?? '') })}
+              />
+            </ChartPanel>
           </div>
         </Panel>
 
@@ -343,11 +681,13 @@ export function AnalyticsPage() {
             <Panel key={cfg.id}>
               <PanelHeader dense icon={<LineChart />} title={cfg.title} subtitle="Smoothed trend across the window" />
               <div className="p-4">
-                <MetricBars
-                  height={180}
-                  rows={trends.rows as unknown as Parameters<typeof MetricBars>[0]['rows']}
-                  series={[{ id: cfg.metric, key: cfg.metric, label: cfg.title, color: '#5B9DFF', metricId: cfg.metric }]}
-                />
+                <ChartPanel bare data={growthSeries[cfg.metric]}>
+                  <MetricBars
+                    height={180}
+                    rows={trends.rows as unknown as Parameters<typeof MetricBars>[0]['rows']}
+                    series={[{ id: cfg.metric, key: cfg.metric, label: cfg.title, color: '#5B9DFF', metricId: cfg.metric }]}
+                  />
+                </ChartPanel>
               </div>
             </Panel>
           ))}
@@ -363,13 +703,15 @@ export function AnalyticsPage() {
             subtitle="Stacked — the mix matters more than the total when diagnosing a plateau"
           />
           <div className="p-4">
-            <MetricBars
-              height={300}
-              stacked
-              rows={platformSeries as unknown as Parameters<typeof MetricBars>[0]['rows']}
-              series={LIVE_PLATFORMS.map((p) => ({ id: p.id, key: p.id, label: p.name, color: p.color, metricId: 'views', stackId: 'a' }))}
-              onBarClick={(row) => openPanel('analytics', { label: String(row.label) })}
-            />
+            <ChartPanel bare data={platformStackData}>
+              <MetricBars
+                height={300}
+                stacked
+                rows={platformSeries as unknown as Parameters<typeof MetricBars>[0]['rows']}
+                series={LIVE_PLATFORMS.map((p) => ({ id: p.id, key: p.id, label: p.name, color: p.color, metricId: 'views', stackId: 'a' }))}
+                onBarClick={(row) => openPanel('analytics', { label: String(row.label) })}
+              />
+            </ChartPanel>
           </div>
         </Panel>
 
@@ -431,29 +773,33 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader icon={<Zap />} title="Signal type over time" subtitle="Stacked engagement, so a spike in one signal is not masked by another" />
             <div className="p-4">
-              <MetricBars
-                height={280}
-                stacked
-                rows={trends.rows as unknown as Parameters<typeof MetricBars>[0]['rows']}
-                series={[
-                  { id: 'likes', key: 'likes', label: 'Likes', color: '#5B9DFF', metricId: 'engagements', stackId: 'e' },
-                  { id: 'comments', key: 'comments', label: 'Comments', color: '#A78BFA', metricId: 'engagements', stackId: 'e' },
-                  { id: 'shares', key: 'shares', label: 'Shares', color: '#34D399', metricId: 'engagements', stackId: 'e' },
-                  { id: 'saves', key: 'saves', label: 'Saves', color: '#FBBF24', metricId: 'engagements', stackId: 'e' },
-                ]}
-              />
+              <ChartPanel bare data={engagementMixData}>
+                <MetricBars
+                  height={280}
+                  stacked
+                  rows={trends.rows as unknown as Parameters<typeof MetricBars>[0]['rows']}
+                  series={[
+                    { id: 'likes', key: 'likes', label: 'Likes', color: '#5B9DFF', metricId: 'engagements', stackId: 'e' },
+                    { id: 'comments', key: 'comments', label: 'Comments', color: '#A78BFA', metricId: 'engagements', stackId: 'e' },
+                    { id: 'shares', key: 'shares', label: 'Shares', color: '#34D399', metricId: 'engagements', stackId: 'e' },
+                    { id: 'saves', key: 'saves', label: 'Saves', color: '#FBBF24', metricId: 'engagements', stackId: 'e' },
+                  ]}
+                />
+              </ChartPanel>
             </div>
           </Panel>
 
           <Panel>
             <PanelHeader dense icon={<Activity />} title="Engagement rate" subtitle="Engagements ÷ reach, per bucket" />
             <div className="p-4">
-              <MetricTrend
-                rows={trends.rows as unknown as Parameters<typeof MetricTrend>[0]['rows']}
-                mode="line"
-                series={[{ id: 'engagementRate', type: 'area' }]}
-                height={200}
-              />
+              <ChartPanel bare data={engagementRateData}>
+                <MetricTrend
+                  rows={trends.rows as unknown as Parameters<typeof MetricTrend>[0]['rows']}
+                  mode="line"
+                  series={[{ id: 'engagementRate', type: 'area' }]}
+                  height={200}
+                />
+              </ChartPanel>
               <div className="mt-3 space-y-3 border-t border-line-1 pt-3">
                 <KeyValue label="Current bucket" value={`${trends.rows[trends.rows.length - 1]?.engagementRate.toFixed(2) ?? '0.00'}%`} mono />
                 <KeyValue label="Window average" value={`${t.engagementRate.toFixed(2)}%`} hint={`was ${p.engagementRate.toFixed(2)}% in the comparison window`} mono />
@@ -476,7 +822,9 @@ export function AnalyticsPage() {
             <div className="p-4">
               {retention.length ? (
                 <>
-                  <RetentionBand points={retention} height={280} />
+                  <ChartPanel bare data={retentionData}>
+                    <RetentionBand points={retention} height={280} />
+                  </ChartPanel>
                   <div className="mt-4 grid grid-cols-3 gap-3.5 border-t border-line-1 pt-4">
                     <KeyValue label="Hook (first 10%)" value={`${retention[0].value}%`} hint="still watching" />
                     <KeyValue label="Midpoint" value={`${retention[Math.floor(retention.length / 2)].value}%`} hint="still watching" />
@@ -492,20 +840,22 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader dense icon={<BarChart3 />} title="Retention by format" subtitle="Completion rate, not view count" />
             <div className="p-4">
-              <RankedBars
-                height={230}
-                metricId="engagementRate"
-                showValue={false}
-                rows={formats
-                  .filter((f) => f.pieces > 0)
-                  .map((f) => ({
-                    id: f.id,
-                    label: f.name,
-                    value: f.retention,
-                    color: f.retention > 0.55 ? '#34D399' : f.retention > 0.45 ? '#5B9DFF' : '#FBBF24',
-                    sub: `${f.pieces} pieces · ${f.viewsPerHour.toFixed(0)} views/hour`,
-                  }))}
-              />
+              <ChartPanel bare data={formatRetentionData}>
+                <RankedBars
+                  height={230}
+                  metricId="engagementRate"
+                  showValue={false}
+                  rows={formats
+                    .filter((f) => f.pieces > 0)
+                    .map((f) => ({
+                      id: f.id,
+                      label: f.name,
+                      value: f.retention,
+                      color: f.retention > 0.55 ? '#34D399' : f.retention > 0.45 ? '#5B9DFF' : '#FBBF24',
+                      sub: `${f.pieces} pieces · ${f.viewsPerHour.toFixed(0)} views/hour`,
+                    }))}
+                />
+              </ChartPanel>
             </div>
           </Panel>
         </div>
@@ -525,38 +875,42 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader icon={<Layers />} title="Topic treemap" subtitle="Area is views · colour is topic · click to drill into the topic" />
             <div className="p-4">
-              <TreemapViz
-                height={320}
-                items={topics.slice(0, 12).map((topic) => ({
-                  id: topic.id,
-                  label: topic.name,
-                  value: topic.views,
-                  color: topic.color,
-                  sub: `${topic.pieces} pieces · ${fmtNumber(topic.avgViews, { compact: true })} avg`,
-                }))}
-                onSelect={(id) => openPanel('drill', { topicId: id, label: topics.find((x) => x.id === id)?.name })}
-              />
+              <ChartPanel bare data={topicTreemapData}>
+                <TreemapViz
+                  height={320}
+                  items={topics.slice(0, 12).map((topic) => ({
+                    id: topic.id,
+                    label: topic.name,
+                    value: topic.views,
+                    color: topic.color,
+                    sub: `${topic.pieces} pieces · ${fmtNumber(topic.avgViews, { compact: true })} avg`,
+                  }))}
+                  onSelect={(id) => openPanel('drill', { topicId: id, label: topics.find((x) => x.id === id)?.name })}
+                />
+              </ChartPanel>
             </div>
           </Panel>
 
           <Panel>
             <PanelHeader dense icon={<Target />} title="Topic efficiency" subtitle="Views earned per production hour" actions={<Badge tone="outline" size="xs">effort-adjusted</Badge>} />
             <div className="p-4">
-              <RankedBars
-                height={320}
-                metricId="views"
-                rows={[...topics]
-                  .sort((a, b) => b.revenuePerHour - a.revenuePerHour || b.views - a.views)
-                  .slice(0, 9)
-                  .map((topic) => ({
-                    id: topic.id,
-                    label: topic.name,
-                    value: topic.effortHours ? topic.views / topic.effortHours : topic.views,
-                    color: topic.color,
-                    sub: `${fmtNumber(topic.views, { compact: true })} views · ${topic.effortHours.toFixed(0)}h · ER ${topic.engagementRate.toFixed(2)}%`,
-                  }))}
-                onSelect={(id) => openPanel('drill', { topicId: id, label: topics.find((x) => x.id === id)?.name })}
-              />
+              <ChartPanel bare data={topicEfficiencyData}>
+                <RankedBars
+                  height={320}
+                  metricId="views"
+                  rows={[...topics]
+                    .sort((a, b) => b.revenuePerHour - a.revenuePerHour || b.views - a.views)
+                    .slice(0, 9)
+                    .map((topic) => ({
+                      id: topic.id,
+                      label: topic.name,
+                      value: topic.effortHours ? topic.views / topic.effortHours : topic.views,
+                      color: topic.color,
+                      sub: `${fmtNumber(topic.views, { compact: true })} views · ${topic.effortHours.toFixed(0)}h · ER ${topic.engagementRate.toFixed(2)}%`,
+                    }))}
+                  onSelect={(id) => openPanel('drill', { topicId: id, label: topics.find((x) => x.id === id)?.name })}
+                />
+              </ChartPanel>
             </div>
           </Panel>
         </div>
@@ -564,40 +918,80 @@ export function AnalyticsPage() {
 
       {/* ================================================================= NO.8 */}
       <Section id="formats" title="Formats" hint="Format is the most controllable variable in the system.">
-        <Panel>
-          <PanelHeader
-            icon={<BarChart3 />}
-            title="Format comparison"
-            subtitle="Sorted by views per production hour — the metric that decides what gets made next"
-          />
-          <div className="p-4">
-            <MetricBars
-              height={260}
-              horizontal
-              rows={formats.map((f) => ({
-                label: f.name,
-                views: f.views,
-                reach: f.reach,
-                engagements: f.views * (f.engagementRate / 100),
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                saves: 0,
-                watchMinutes: 0,
-                followersGained: f.followersGained,
-                clicks: 0,
-                revenue: f.revenue,
-                impressions: 0,
-                engagementRate: f.engagementRate,
-                followers: 0,
-                date: f.id,
-              }))}
-              series={[{ id: 'viewsPerHour', key: 'views', label: 'Views', color: '#5B9DFF', metricId: 'views' }]}
+        <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <Panel>
+            <PanelHeader
+              icon={<BarChart3 />}
+              title="Format comparison"
+              subtitle="Sorted by views per production hour — the metric that decides what gets made next"
             />
-          </div>
-          <div className="border-t border-line-2">
-            <FormatTable />
-          </div>
+            <div className="p-4">
+              <ChartPanel bare data={formatCompareData}>
+                <MetricBars
+                  height={260}
+                  horizontal
+                  rows={formats.map((f) => ({
+                    label: f.name,
+                    views: f.views,
+                    reach: f.reach,
+                    engagements: f.views * (f.engagementRate / 100),
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                    saves: 0,
+                    watchMinutes: 0,
+                    followersGained: f.followersGained,
+                    clicks: 0,
+                    revenue: f.revenue,
+                    impressions: 0,
+                    engagementRate: f.engagementRate,
+                    followers: 0,
+                    date: f.id,
+                  }))}
+                  series={[{ id: 'viewsPerHour', key: 'views', label: 'Views', color: '#5B9DFF', metricId: 'views' }]}
+                />
+              </ChartPanel>
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHeader
+              dense
+              icon={<Target />}
+              title="Capability profile"
+              subtitle="Six axes, each normalised against the strongest format on that axis"
+            />
+            <div className="grid place-items-center p-4">
+              <ChartPanel bare data={radarData} className="w-full max-w-[340px]">
+                <div className="grid place-items-center">
+                    <RadarViz axes={RADAR_AXES} series={radarSeries.filter((r) => !radarVisible.length || radarVisible.includes(r.id))} size={272} />
+                </div>
+              </ChartPanel>
+              <div className="mt-3 w-full">
+                <Legend
+                  items={radarSeries.map((r) => ({ id: r.id, label: r.label, color: r.color }))}
+                  active={radarVisible.length ? radarVisible : radarSeries.map((r) => r.id)}
+                  onToggle={(id) =>
+                    setRadarVisible((list) => (list.includes(id) ? (list.length > 1 ? list.filter((x) => x !== id) : list) : [...list, id]))
+                  }
+                />
+              </div>
+            </div>
+            <p className="border-t border-line-1 px-4 py-2.5 text-[10.5px] leading-relaxed text-ink-faint">
+              A spiky shape is a specialist format; a wide, even shape is a workhorse. Overlay two to see whether short form is genuinely replacing long form, or just borrowing its audience.
+            </p>
+          </Panel>
+
+        </div>
+
+        <Panel className="mt-3.5">
+          <PanelHeader
+            dense
+            icon={<BarChart3 />}
+            title="Format ledger"
+            subtitle="Every format in scope with the numbers behind the profile"
+          />
+          <FormatTable />
         </Panel>
       </Section>
 
@@ -623,18 +1017,20 @@ export function AnalyticsPage() {
             }
           />
           <div className="p-4">
-            <BubbleMatrix
-              height={440}
-              points={matrixPoints}
-              xLabel="Production effort (hours)"
-              yLabel="Views"
-              zLabel="Reach per hour"
-              xFormat={(v) => `${v}h`}
-              yFormat={(v) => fmtNumber(v, { compact: true })}
-              zFormat={(v) => fmtNumber(v, { compact: true })}
-              quadrants={['high impact · light lift', 'high impact · heavy lift', 'low impact · light lift', 'low impact · heavy lift']}
-              onSelect={(id) => openPanel('content', { contentId: id })}
-            />
+            <ChartPanel bare data={matrixData}>
+              <BubbleMatrix
+                height={440}
+                points={matrixPoints}
+                xLabel="Production effort (hours)"
+                yLabel="Views"
+                zLabel="Reach per hour"
+                xFormat={(v) => `${v}h`}
+                yFormat={(v) => fmtNumber(v, { compact: true })}
+                zFormat={(v) => fmtNumber(v, { compact: true })}
+                quadrants={['high impact · light lift', 'high impact · heavy lift', 'low impact · light lift', 'low impact · heavy lift']}
+                onSelect={(id) => openPanel('content', { contentId: id })}
+              />
+            </ChartPanel>
           </div>
           <div className="grid gap-0 border-t border-line-2 lg:grid-cols-2">
             <div className="border-line-2 p-4 lg:border-r">
@@ -679,7 +1075,9 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader icon={<Route />} title="Attention funnel" subtitle="Each stage relative to impressions · step rates shown between stages" />
             <div className="p-4">
-              <Funnel stages={funnel} height={300} onStageClick={(id) => openPanel('analytics', { label: funnel.find((f) => f.id === id)?.label })} />
+              <ChartPanel bare data={funnelData}>
+                <Funnel stages={funnel} height={300} onStageClick={(id) => openPanel('analytics', { label: funnel.find((f) => f.id === id)?.label })} />
+              </ChartPanel>
             </div>
           </Panel>
 
@@ -726,7 +1124,9 @@ export function AnalyticsPage() {
               actions={<Badge tone="accent" size="xs">{heat.filter((c) => c.published > 0).length} publish days</Badge>}
             />
             <div className="p-4">
-              <CalendarHeat cells={heat} weeks={27} onSelectDay={(date) => openPanel('analytics', { label: date })} />
+              <ChartPanel bare data={heatData}>
+                <CalendarHeat cells={heat} weeks={27} onSelectDay={(date) => openPanel('analytics', { label: date })} />
+              </ChartPanel>
               <div className="mt-4 grid grid-cols-3 gap-3.5 border-t border-line-1 pt-4">
                 <KeyValue label="Active days" value={String(heat.filter((c) => c.value > 0).length)} hint={`of ${heat.length}`} mono />
                 <KeyValue
@@ -747,7 +1147,9 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader dense icon={<Activity />} title="When the audience is present" subtitle="Engagements by weekday and hour" />
             <div className="p-4">
-              <ActivityGrid rows={activity.rows} hours={activity.hours} color="#5B9DFF" />
+              <ChartPanel bare data={activityData}>
+                <ActivityGrid rows={activity.rows} hours={activity.hours} color="#5B9DFF" />
+              </ChartPanel>
               <div className="mt-3 space-y-2 border-t border-line-1 pt-3">
                 <p className="cell-label">Publish-day distribution</p>
                 <ShareBar
@@ -774,32 +1176,36 @@ export function AnalyticsPage() {
           <Panel>
             <PanelHeader icon={<Target />} title="Revenue by source" subtitle="Month by month, with expenses subtracted" />
             <div className="p-4">
-              <Waterfall
-                height={260}
-                rows={revenueWaterfall(ds)}
-              />
+              <ChartPanel bare data={waterfallData}>
+                <Waterfall
+                  height={260}
+                  rows={revenueWaterfall(ds)}
+                />
+              </ChartPanel>
             </div>
           </Panel>
 
           <Panel>
             <PanelHeader dense icon={<Zap />} title="Effort efficiency" subtitle="Reach per production hour, by effort tier" />
             <div className="p-4">
-              <RankedBars
-                height={200}
-                metricId="reach"
-                rows={['Light', 'Standard', 'Heavy'].map((tier, i) => {
-                  const rows = roi.filter((r) => r.effortTier === tier && r.views > 0)
-                  const reach = rows.reduce((s, r) => s + r.reach, 0)
-                  const hours = rows.reduce((s, r) => s + r.effort, 0)
-                  return {
-                    id: tier,
-                    label: tier,
-                    value: hours ? reach / hours : 0,
-                    color: ['#34D399', '#5B9DFF', '#FBBF24'][i],
-                    sub: `${rows.length} pieces · ${hours}h total · ${fmtNumber(reach, { compact: true })} reach`,
-                  }
-                })}
-              />
+              <ChartPanel bare data={effortTierData}>
+                <RankedBars
+                  height={200}
+                  metricId="reach"
+                  rows={['Light', 'Standard', 'Heavy'].map((tier, i) => {
+                    const rows = roi.filter((r) => r.effortTier === tier && r.views > 0)
+                    const reach = rows.reduce((s, r) => s + r.reach, 0)
+                    const hours = rows.reduce((s, r) => s + r.effort, 0)
+                    return {
+                      id: tier,
+                      label: tier,
+                      value: hours ? reach / hours : 0,
+                      color: ['#34D399', '#5B9DFF', '#FBBF24'][i],
+                      sub: `${rows.length} pieces · ${hours}h total · ${fmtNumber(reach, { compact: true })} reach`,
+                    }
+                  })}
+                />
+              </ChartPanel>
               <div className="mt-4 grid grid-cols-2 gap-3.5 border-t border-line-1 pt-4">
                 <KeyValue label="Total production hours" value={`${roi.reduce((s, r) => s + r.effort, 0)}h`} mono />
                 <KeyValue label="Pieces in matrix" value={String(roi.length)} mono />
@@ -815,12 +1221,14 @@ export function AnalyticsPage() {
       <Section id="health" title="Creator health" hint="Six operating pillars with explicit targets.">
         <div className="grid gap-3.5 lg:grid-cols-[300px_minmax(0,1fr)]">
           <Panel className="p-5">
-            <Gauge
-              value={health.reduce((s, h) => s + h.value, 0) / health.length}
-              label="composite"
-              color="#5B9DFF"
-              size={220}
-            />
+            <ChartPanel bare data={healthData}>
+              <Gauge
+                value={health.reduce((s, h) => s + h.value, 0) / health.length}
+                label="composite"
+                color="#5B9DFF"
+                size={220}
+              />
+            </ChartPanel>
             <p className="mt-2 text-center text-[11px] text-ink-low">Weighted across the six pillars below</p>
           </Panel>
 
@@ -886,6 +1294,38 @@ function PlatformMatrix({
 
   const dna = useMemo(() => dnaBreakdown(ds, filters, 'platform', 'youtube'), [ds, filters])
 
+  const gridData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Dimension' },
+          ...heat.columns.map((c) => ({ key: c.id, label: c.label, align: 'right' as const })),
+        ],
+        heat.rows.map((r, ri) => {
+          const row: Record<string, string | number> = { label: r.label }
+          heat.columns.forEach((c, ci) => (row[c.id] = Math.round(heat.values[ri][ci].raw)))
+          return row
+        }),
+        { unit: 'dimension', caption: 'Platform capability matrix, absolute values' },
+      ),
+    [heat],
+  )
+
+  const dnaData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Topic' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'published', label: 'Pieces', align: 'right' },
+          { key: 'share', label: 'Share of platform', align: 'right', format: (v: number) => `${(v * 100).toFixed(1)}%` },
+        ],
+        dna.map((d) => ({ label: d.label, views: d.views, published: d.published, share: Number(d.share.toFixed(4)) })),
+        { unit: 'topic', caption: 'Content DNA — YouTube topic composition' },
+      ),
+    [dna],
+  )
+
   return (
     <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
       <Panel>
@@ -895,13 +1335,15 @@ function PlatformMatrix({
           subtitle="Normalised per row — dark means strongest on that dimension. Click a column to drill."
         />
         <div className="p-4">
-          <HeatGrid
-            rows={heat.rows}
-            columns={heat.columns}
-            values={heat.values}
-            color="#5B9DFF"
-            onCellClick={(_, colId) => onDrill(colId as (typeof platforms)[number]['id'], platformById(colId as (typeof platforms)[number]['id']).name)}
-          />
+          <ChartPanel bare data={gridData}>
+            <HeatGrid
+              rows={heat.rows}
+              columns={heat.columns}
+              values={heat.values}
+              color="#5B9DFF"
+              onCellClick={(_, colId) => onDrill(colId as (typeof platforms)[number]['id'], platformById(colId as (typeof platforms)[number]['id']).name)}
+            />
+          </ChartPanel>
           <div className="mt-3 flex items-center gap-3">
             <span className="text-[10px] text-ink-faint">weaker</span>
             <span className="h-2 w-28 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(91,157,255,0.08), rgba(91,157,255,0.65))' }} />
@@ -917,18 +1359,20 @@ function PlatformMatrix({
           subtitle="YouTube → topic composition. Change the platform in the drill panel to walk the hierarchy."
         />
         <div className="p-4">
-          <RankedBars
-            height={260}
-            metricId="views"
-            rows={dna.map((d) => ({
-              id: d.key,
-              label: d.label,
-              value: d.views,
-              color: d.color,
-              sub: `${d.published} pieces · ${(d.share * 100).toFixed(1)}% of platform views`,
-            }))}
-            onSelect={(id) => useApp.getState().openPanel('drill', { topicId: id, label: dna.find((d) => d.key === id)?.label })}
-          />
+          <ChartPanel bare data={dnaData}>
+            <RankedBars
+              height={260}
+              metricId="views"
+              rows={dna.map((d) => ({
+                id: d.key,
+                label: d.label,
+                value: d.views,
+                color: d.color,
+                sub: `${d.published} pieces · ${(d.share * 100).toFixed(1)}% of platform views`,
+              }))}
+              onSelect={(id) => useApp.getState().openPanel('drill', { topicId: id, label: dna.find((d) => d.key === id)?.label })}
+            />
+          </ChartPanel>
         </div>
       </Panel>
     </div>
@@ -948,6 +1392,16 @@ function FormatTable() {
     { id: 'ret', header: 'Retention', width: 96, align: 'right', numeric: true, sortValue: (f) => f.retention, cell: (f) => <span>{(f.retention * 100).toFixed(0)}%</span> },
     { id: 'vph', header: 'Views / hour', width: 116, align: 'right', numeric: true, sortValue: (f) => f.viewsPerHour, cell: (f) => <span className={f.viewsPerHour > 40_000 ? 'text-emerald' : ''}>{fmtNumber(f.viewsPerHour, { compact: true })}</span> },
     { id: 'follows', header: 'Follows', width: 100, align: 'right', numeric: true, sortValue: (f) => f.followersGained, cell: (f) => <span className="text-emerald">+{fmtNumber(f.followersGained, { compact: true })}</span> },
+    {
+      id: 'conversion',
+      header: 'Conversion',
+      width: 104,
+      align: 'right',
+      numeric: true,
+      headerHint: 'Followers won per 100 views — how well a format turns attention into audience',
+      sortValue: (f) => f.conversion,
+      cell: (f) => <span>{f.conversion.toFixed(2)}%</span>,
+    },
     { id: 'revenue', header: 'Revenue', width: 100, align: 'right', numeric: true, sortValue: (f) => f.revenue, cell: (f) => <span>{fmtCurrency(f.revenue, { compact: true })}</span> },
     { id: 'effort', header: 'Effort', width: 88, align: 'right', numeric: true, sortValue: (f) => f.effort, cell: (f) => <span>{f.effort.toFixed(1)}h avg</span> },
   ]

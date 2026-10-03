@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/store/app'
-import { useDataset, useSettled } from '@/lib/hooks'
+import { useDataset, useSettled, useSpotlight } from '@/lib/hooks'
 import { fmtBytes, fmtDate, fmtNumber } from '@/lib/format'
 import type { Asset } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Skeleton } from '@/components/ui/Surface'
@@ -207,58 +207,15 @@ export function AssetsPage() {
 
       {view === 'grid' ? (
         <div className="stagger grid gap-3 pb-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-          {items.map((asset) => {
-            const meta = KIND_META[asset.kind]
-            const isStar = starred[asset.id] ?? asset.starred
-            return (
-              <article key={asset.id} className="group overflow-hidden rounded-xl border border-line-2 bg-panel transition-all duration-250 hover:-translate-y-0.5 hover:border-line-3 hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)]">
-                <button className="relative block w-full" onClick={() => setOpenId(asset.id)}>
-                  <Thumb seed={asset.seed} accent={meta.color} aspect="16/9" />
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <span className="rounded-md border border-white/20 bg-black/50 px-2 py-1 text-[10.5px] text-white backdrop-blur-md">Open</span>
-                  </span>
-                  <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-semibold backdrop-blur-md" style={{ background: `${meta.color}CC`, color: '#0B0D11' }}>
-                    {meta.label.toUpperCase()}
-                  </span>
-                  {asset.duration && (
-                    <span className="absolute bottom-2 right-2 rounded bg-black/65 px-1.5 py-0.5 backdrop-blur-md">
-                      <span className="mono text-[9px] text-ink">{asset.duration}</span>
-                    </span>
-                  )}
-                </button>
-                <div className="p-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-[11.5px] font-medium text-ink-hi">{asset.name}</p>
-                      <p className="mono mt-0.5 truncate text-[9.5px] text-ink-faint">{asset.folder}</p>
-                    </div>
-                    <button
-                      onClick={() => setStarred((s) => ({ ...s, [asset.id]: !isStar }))}
-                      aria-label={isStar ? 'Unstar asset' : 'Star asset'}
-                      className={cn('shrink-0 rounded p-0.5 transition-colors', isStar ? 'text-amber' : 'text-ink-ghost hover:text-ink-low')}
-                    >
-                      <Star className={cn('h-3.5 w-3.5', isStar && 'fill-amber')} />
-                    </button>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-line-1 pt-2">
-                    <span className="mono text-[9.5px] text-ink-faint">{fmtBytes(asset.size)}</span>
-                    <span className="flex items-center gap-1.5">
-                      {asset.usedIn.length > 0 ? (
-                        <span className="mono flex items-center gap-1 text-[9.5px] text-ink-mid">
-                          <Paperclip className="h-2.5 w-2.5" />
-                          {asset.usedIn.length}
-                        </span>
-                      ) : (
-                        <Badge tone="warn" size="xs">
-                          orphan
-                        </Badge>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            )
-          })}
+          {items.map((asset) => (
+            <AssetCard
+              key={asset.id}
+              asset={asset}
+              starred={starred[asset.id] ?? asset.starred}
+              onToggleStar={() => setStarred((s) => ({ ...s, [asset.id]: !(starred[asset.id] ?? asset.starred) }))}
+              onOpen={() => setOpenId(asset.id)}
+            />
+          ))}
           {!items.length && (
             <div className="sm:col-span-3 lg:col-span-4 2xl:col-span-5">
               <EmptyState icon={<HardDrive />} title="Nothing in this folder" body="Clear the filters, or upload files to populate the library." />
@@ -324,6 +281,80 @@ export function AssetsPage() {
 
       <AssetDrawer asset={open} onClose={() => setOpenId(null)} />
     </Page>
+  )
+}
+
+/**
+ * A preview card with a cursor-aware spotlight. Because the light follows the
+ * pointer, the grid reads as physical rather than as a list of thumbnails — and
+ * it is the only place in the product where the pointer drives an effect.
+ */
+function AssetCard({
+  asset,
+  starred,
+  onToggleStar,
+  onOpen,
+}: {
+  asset: Asset
+  starred: boolean
+  onToggleStar: () => void
+  onOpen: () => void
+}) {
+  const meta = KIND_META[asset.kind]
+  const { ref, onPointerMove } = useSpotlight<HTMLElement>()
+  return (
+    <article
+      ref={ref}
+      onPointerMove={onPointerMove}
+      className="spotlight group overflow-hidden rounded-xl border border-line-2 bg-panel transition-all duration-250 hover:-translate-y-0.5 hover:border-line-3 hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)]"
+    >
+      <div className="relative z-[2]">
+        <button className="relative block w-full" onClick={onOpen}>
+          <Thumb seed={asset.seed} accent={meta.color} aspect="16/9" />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <span className="rounded-md border border-white/20 bg-black/50 px-2 py-1 text-[10.5px] text-white backdrop-blur-md">Open</span>
+          </span>
+          <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-semibold backdrop-blur-md" style={{ background: `${meta.color}CC`, color: '#0B0D11' }}>
+            {meta.label.toUpperCase()}
+          </span>
+          {asset.duration && (
+            <span className="absolute bottom-2 right-2 rounded bg-black/65 px-1.5 py-0.5 backdrop-blur-md">
+              <span className="mono text-[9px] text-ink">{asset.duration}</span>
+            </span>
+          )}
+        </button>
+        <div className="p-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-[11.5px] font-medium text-ink-hi">{asset.name}</p>
+              <p className="mono mt-0.5 truncate text-[9.5px] text-ink-faint">{asset.folder}</p>
+            </div>
+            <button
+              onClick={onToggleStar}
+              aria-label={starred ? 'Unstar asset' : 'Star asset'}
+              className={cn('shrink-0 rounded p-0.5 transition-colors', starred ? 'text-amber' : 'text-ink-ghost hover:text-ink-low')}
+            >
+              <Star className={cn('h-3.5 w-3.5', starred && 'fill-amber')} />
+            </button>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2 border-t border-line-1 pt-2">
+            <span className="mono text-[9.5px] text-ink-faint">{fmtBytes(asset.size)}</span>
+            <span className="flex items-center gap-1.5">
+              {asset.usedIn.length > 0 ? (
+                <span className="mono flex items-center gap-1 text-[9.5px] text-ink-mid">
+                  <Paperclip className="h-2.5 w-2.5" />
+                  {asset.usedIn.length}
+                </span>
+              ) : (
+                <Badge tone="warn" size="xs">
+                  orphan
+                </Badge>
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
   )
 }
 

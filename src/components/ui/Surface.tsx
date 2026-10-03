@@ -20,7 +20,9 @@ export function Panel({
 }: {
   children: ReactNode
   className?: string
-  /** 0 = none, 1 = subtle hover bloom, 2 = selected, 3 = focused */
+  /** 0 = none, 1 = subtle hover bloom, 2 = selected (adds the orbiting aura
+      ring — the product's one animated border, reserved for the surface that
+      owns the screen), 3 = focused */
   glow?: 0 | 1 | 2 | 3
   interactive?: boolean
   /** Rises 1.5px on hover — for cards that open something. */
@@ -34,7 +36,7 @@ export function Panel({
         'shadow-[inset_0_1px_0_0_rgba(255,255,255,0.022),0_1px_2px_0_rgba(0,0,0,0.3)]',
         'transition-[border-color,background-color,box-shadow,transform] duration-250 ease-[var(--ease-cockpit)]',
         (lift || interactive) && 'lift',
-        glow === 2 && 'glow-2',
+        glow === 2 && 'glow-2 aura',
         glow === 3 && 'glow-3',
         interactive && 'hover:border-line-3 hover:bg-surface-1',
         glow === 1 && 'hover:shadow-[0_0_26px_-10px_rgba(91,157,255,0.4)]',

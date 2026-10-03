@@ -24,6 +24,7 @@ import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
 import { Segmented } from '@/components/ui/Field'
 import { Thumb, SwatchTile } from '@/components/ui/Thumb'
 import { RankedBars, ShareBar } from '@/components/charts/Bars'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 
 /* ============================================================================
    BRAND SYSTEM
@@ -41,6 +42,42 @@ export function BrandPage() {
 
   const topics = useMemo(() => topicStats(ds, useApp.getState().filters), [ds])
   const totalPillarViews = topics.reduce((s, t) => s + t.views, 0) || 1
+
+  const pillarMixData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Pillar' },
+          { key: 'views', label: 'Views', align: 'right' },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+        ],
+        brand.pillars.map((p) => ({
+          name: p.name,
+          views: topics.filter((t) => t.pillar === p.id).reduce((a, t) => a + t.views, 0),
+          pieces: topics.filter((t) => t.pillar === p.id).reduce((a, t) => a + t.pieces, 0),
+        })),
+        { unit: 'pillar', caption: 'Share of views by content pillar' },
+      ),
+    [brand, topics],
+  )
+
+  const territoryData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Pillar' },
+          { key: 'share', label: 'Share of views', align: 'right', format: (v: number) => `${(v * 100).toFixed(1)}%` },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+        ],
+        brand.pillars.map((p) => ({
+          name: p.name,
+          share: Number((topics.filter((t) => t.pillar === p.id).reduce((a, t) => a + t.views, 0) / totalPillarViews).toFixed(4)),
+          pieces: topics.filter((t) => t.pillar === p.id).reduce((a, t) => a + t.pieces, 0),
+        })),
+        { unit: 'pillar', caption: 'Territory performance — views per pillar' },
+      ),
+    [brand, topics, totalPillarViews],
+  )
 
   const copy = (value: string) => {
     navigator.clipboard?.writeText(value).catch(() => undefined)
@@ -295,15 +332,17 @@ export function BrandPage() {
             <Panel>
               <PanelHeader dense icon={<Eye />} title="Pillar mix in scope" subtitle="Share of views, not share of pieces" />
               <div className="p-3.5">
-                <ShareBar
-                  showLabels
-                  segments={brand.pillars.map((p) => ({
-                    id: p.id,
-                    label: p.name,
-                    value: topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.views, 0),
-                    color: p.color,
-                  }))}
-                />
+                <ChartPanel bare data={pillarMixData}>
+                  <ShareBar
+                    showLabels
+                    segments={brand.pillars.map((p) => ({
+                      id: p.id,
+                      label: p.name,
+                      value: topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.views, 0),
+                      color: p.color,
+                    }))}
+                  />
+                </ChartPanel>
                 <p className="mt-3 text-[10.5px] leading-relaxed text-ink-faint">
                   Weights drive the content calendar: when a pillar drifts more than six points from target, the next two topics are drawn from it.
                 </p>
@@ -312,18 +351,20 @@ export function BrandPage() {
             <Panel>
               <PanelHeader dense icon={<Layers />} title="Territory performance" subtitle="Views per pillar" />
               <div className="p-3.5">
-                <RankedBars
-                  height={230}
-                  metricId="views"
-                  rows={brand.pillars.map((p) => ({
-                    id: p.id,
-                    label: p.name,
-                    value: topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.views, 0) / totalPillarViews,
-                    color: p.color,
-                    sub: `${topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.pieces, 0)} pieces`,
-                  }))}
-                  showValue={false}
-                />
+                <ChartPanel bare data={territoryData}>
+                  <RankedBars
+                    height={230}
+                    metricId="views"
+                    rows={brand.pillars.map((p) => ({
+                      id: p.id,
+                      label: p.name,
+                      value: topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.views, 0) / totalPillarViews,
+                      color: p.color,
+                      sub: `${topics.filter((t) => t.pillar === p.id).reduce((s, t) => s + t.pieces, 0)} pieces`,
+                    }))}
+                    showValue={false}
+                  />
+                </ChartPanel>
               </div>
             </Panel>
           </div>

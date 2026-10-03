@@ -26,6 +26,7 @@ import { Drawer } from '@/components/ui/Overlay'
 import { FilterBar } from '@/components/shell/FilterBar'
 import { MetricBars, RankedBars, ShareBar } from '@/components/charts/Bars'
 import { Waterfall } from '@/components/charts/Special'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { MetricCard } from '@/components/metrics/MetricCard'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 
@@ -58,6 +59,38 @@ export function RevenuePage() {
   const timeline = useMemo(() => revenueTimeline(ds, 12), [ds])
   const deals = useMemo(() => dealStats(ds), [ds])
 
+  /* Series behind the business charts. */
+  const waterfallData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Line' },
+          { key: 'value', label: 'Amount', align: 'right', format: (v: number) => fmtCurrency(v) },
+        ],
+        [
+          ...timeline.slice(-6).map((m) => ({ label: m.label, value: Math.round(m.total) })),
+          { label: 'Expenses', value: -Math.round(timeline.slice(-6).reduce((s, m) => s + m.expenses, 0)) },
+          { label: 'Net', value: Math.round(timeline.slice(-6).reduce((s, m) => s + m.net, 0)) },
+        ],
+        { unit: 'month', caption: 'Monthly revenue, expenses and net for the last six months' },
+      ),
+    [timeline],
+  )
+
+  const sourceData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Source' },
+          { key: 'amount', label: 'Amount', align: 'right', format: (v: number) => fmtCurrency(v) },
+          { key: 'category', label: 'Category' },
+        ],
+        sources.map((x) => ({ name: x.name, amount: Math.round(x.amount), category: x.category })),
+        { unit: 'source', caption: 'Revenue by source with concentration risk' },
+      ),
+    [sources],
+  )
+
   const expensesInScope = useMemo(() => {
     const from = timeline[Math.max(0, timeline.length - 6)]?.month ?? '0000-00'
     return ds.expenses.filter((e) => e.date.slice(0, 7) >= from)
@@ -79,6 +112,19 @@ export function RevenuePage() {
       .map(([label, value]) => ({ label, value, color: palette[label] ?? '#6A7284' }))
       .sort((a, b) => b.value - a.value)
   }, [expensesInScope])
+
+  const expenseData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Category' },
+          { key: 'value', label: 'Spend', align: 'right', format: (v: number) => fmtCurrency(v) },
+        ],
+        expensesByCategory.map((c) => ({ label: c.label, value: Math.round(c.value) })),
+        { unit: 'category', caption: 'Expenses by category over the last six months' },
+      ),
+    [expensesByCategory],
+  )
 
   const openDeal = ds.deals.find((d) => d.id === dealId) ?? null
   const totalExpenses = expensesInScope.reduce((s, e) => s + e.amount, 0)
@@ -191,18 +237,20 @@ export function RevenuePage() {
             subtitle="Six months of income, then the expense line, then net — the only three numbers that describe the business"
           />
           <div className="p-4">
-            <Waterfall
-              height={280}
-              rows={[
-                ...timeline.slice(-6).map((m, i) => ({
-                  label: m.label,
-                  value: m.total,
-                  color: ['#5B9DFF', '#38D6F5', '#A78BFA', '#34D399', '#FBBF24', '#2DD4BF'][i % 6],
-                })),
-                { label: 'Expenses', value: -timeline.slice(-6).reduce((s, m) => s + m.expenses, 0), color: '#FB7185' },
-                { label: 'Net', value: timeline.slice(-6).reduce((s, m) => s + m.net, 0), color: '#34D399', type: 'total' as const },
-              ]}
-            />
+            <ChartPanel bare data={waterfallData}>
+              <Waterfall
+                height={280}
+                rows={[
+                  ...timeline.slice(-6).map((m, i) => ({
+                    label: m.label,
+                    value: m.total,
+                    color: ['#5B9DFF', '#38D6F5', '#A78BFA', '#34D399', '#FBBF24', '#2DD4BF'][i % 6],
+                  })),
+                  { label: 'Expenses', value: -timeline.slice(-6).reduce((s, m) => s + m.expenses, 0), color: '#FB7185' },
+                  { label: 'Net', value: timeline.slice(-6).reduce((s, m) => s + m.net, 0), color: '#34D399', type: 'total' as const },
+                ]}
+              />
+            </ChartPanel>
           </div>
         </Panel>
 
@@ -214,22 +262,26 @@ export function RevenuePage() {
                 <span className={cn('tnum text-[22px] font-semibold', topThreeShare > 0.8 ? 'text-amber' : 'text-ink-hi')}>{(topThreeShare * 100).toFixed(0)}%</span>
                 <span className="text-[11px] text-ink-faint">from {Math.min(3, sources.length)} sources</span>
               </div>
-              <ShareBar segments={sources.map((s) => ({ id: s.id, label: s.name, value: s.amount, color: s.color }))} showLabels />
+              <ChartPanel bare data={sourceData}>
+                <ShareBar segments={sources.map((s) => ({ id: s.id, label: s.name, value: s.amount, color: s.color }))} showLabels />
+              </ChartPanel>
             </div>
           </Panel>
 
           <Panel>
             <PanelHeader dense icon={<Wallet />} title="Top sources" subtitle="Click to filter the whole page" />
             <div className="p-3.5">
-              <RankedBars
-                height={220}
-                metricId="revenue"
-                rows={sources.slice(0, 6).map((s) => ({ id: s.id, label: s.name, value: s.amount, color: s.color, sub: s.category }))}
-                onSelect={(id) => {
-                  const src = sources.find((s) => s.id === id)
-                  if (src) pushToast({ kind: 'info', title: `${src.name} selected`, body: `${fmtCurrency(src.amount)} in the current scope.` })
-                }}
-              />
+              <ChartPanel bare data={{ ...sourceData, rows: sourceData.rows.slice(0, 6) }}>
+                <RankedBars
+                  height={220}
+                  metricId="revenue"
+                  rows={sources.slice(0, 6).map((s) => ({ id: s.id, label: s.name, value: s.amount, color: s.color, sub: s.category }))}
+                  onSelect={(id) => {
+                    const src = sources.find((s) => s.id === id)
+                    if (src) pushToast({ kind: 'info', title: `${src.name} selected`, body: `${fmtCurrency(src.amount)} in the current scope.` })
+                  }}
+                />
+              </ChartPanel>
             </div>
           </Panel>
         </div>
@@ -319,7 +371,9 @@ export function RevenuePage() {
               <Panel>
                 <PanelHeader dense icon={<Wallet />} title="By category" subtitle="Last six months" />
                 <div className="p-3.5">
-                  <ShareBar segments={expensesByCategory.map((c) => ({ id: c.label, label: c.label, value: c.value, color: c.color }))} showLabels />
+                  <ChartPanel bare data={expenseData}>
+                    <ShareBar segments={expensesByCategory.map((c) => ({ id: c.label, label: c.label, value: c.value, color: c.color }))} showLabels />
+                  </ChartPanel>
                   <div className="mt-3.5 grid grid-cols-2 gap-3 border-t border-line-1 pt-3.5">
                     <KeyValue label="Total expenses" value={fmtCurrency(totalExpenses)} mono />
                     <KeyValue label="Monthly average" value={fmtCurrency(totalExpenses / 6)} mono />
@@ -331,30 +385,32 @@ export function RevenuePage() {
               <Panel>
                 <PanelHeader dense icon={<TrendingUp />} title="Fixed vs variable" subtitle="What you owe even in a quiet month" />
                 <div className="p-3.5">
-                  <MetricBars
-                    height={160}
-                    rows={expensesByCategory.map((c) => ({
-                      label: c.label,
-                      value: c.value,
-                      amount: c.value,
-                      views: 0,
-                      reach: 0,
-                      engagements: 0,
-                      likes: 0,
-                      comments: 0,
-                      shares: 0,
-                      saves: 0,
-                      watchMinutes: 0,
-                      followersGained: 0,
-                      clicks: 0,
-                      revenue: c.value,
-                      impressions: 0,
-                      engagementRate: 0,
-                      followers: 0,
-                      date: c.label,
-                    }))}
-                    series={[{ id: 'revenue', key: 'revenue', label: 'Spend', color: '#A78BFA', metricId: 'revenue' }]}
-                  />
+                  <ChartPanel bare data={expenseData}>
+                    <MetricBars
+                      height={160}
+                      rows={expensesByCategory.map((c) => ({
+                        label: c.label,
+                        value: c.value,
+                        amount: c.value,
+                        views: 0,
+                        reach: 0,
+                        engagements: 0,
+                        likes: 0,
+                        comments: 0,
+                        shares: 0,
+                        saves: 0,
+                        watchMinutes: 0,
+                        followersGained: 0,
+                        clicks: 0,
+                        revenue: c.value,
+                        impressions: 0,
+                        engagementRate: 0,
+                        followers: 0,
+                        date: c.label,
+                      }))}
+                      series={[{ id: 'revenue', key: 'revenue', label: 'Spend', color: '#A78BFA', metricId: 'revenue' }]}
+                    />
+                  </ChartPanel>
                   <p className="mt-2 text-[10.5px] leading-relaxed text-ink-faint">
                     Team and software are fixed. Equipment and travel scale with output — the first place to flex in a low month.
                   </p>

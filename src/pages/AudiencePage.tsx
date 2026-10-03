@@ -13,6 +13,7 @@ import { FilterBar } from '@/components/shell/FilterBar'
 import { MetricTrend } from '@/components/charts/LineArea'
 import { ShareBar, RankedBars, MetricBars } from '@/components/charts/Bars'
 import { ActivityGrid, Gauge } from '@/components/charts/Special'
+import { ChartPanel, chartData, summarizeChart } from '@/components/charts/kit'
 import { MetricCard, MetricHero } from '@/components/metrics/MetricCard'
 
 /* ============================================================================
@@ -33,11 +34,153 @@ export function AudiencePage() {
   const weekly = useMemo(() => growthCohorts(ds, filters), [ds, filters])
   const activity = useMemo(() => activityProfile(ds, filters), [ds, filters])
   const totals = useMemo(() => scopedTotals(ds, filters), [ds, filters])
-
   const totalFollowers = perPlatform.reduce((s, p) => s + p.followers, 0)
   const gained = perPlatform.reduce((s, p) => s + p.gained, 0)
   const lost = perPlatform.reduce((s, p) => s + p.lost, 0)
   const returning = perPlatform.reduce((s, p) => s + p.returningShare * p.followers, 0) / (totalFollowers || 1)
+
+  /* Series behind each audience visualisation, exposed as tables on demand. */
+  const growthData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Date' },
+          { key: 'followers', label: 'Followers', align: 'right' },
+          { key: 'followersGained', label: 'New followers', align: 'right' },
+        ],
+        timeline.map((r) => ({ label: r.label, followers: r.followers, followersGained: r.followersGained })),
+        { unit: 'day', caption: 'Audience growth across the selected period' },
+      ),
+    [timeline],
+  )
+
+  const compositionData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Platform' },
+          { key: 'followers', label: 'Followers', align: 'right' },
+          { key: 'gained', label: 'Gained', align: 'right' },
+          { key: 'lost', label: 'Lost', align: 'right' },
+          { key: 'net', label: 'Net', align: 'right' },
+          { key: 'returningShare', label: 'Returning', align: 'right', format: (v: number) => `${(v * 100).toFixed(1)}%` },
+        ],
+        perPlatform.map((p) => ({
+          name: platformById(p.platform).name,
+          followers: p.followers,
+          gained: p.gained,
+          lost: p.lost,
+          net: p.net,
+          returningShare: Number(p.returningShare.toFixed(4)),
+        })),
+        { unit: 'platform', caption: 'Audience composition by platform' },
+      ),
+    [perPlatform],
+  )
+
+  const activityData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'day', label: 'Weekday' },
+          ...activity.hours.map((h) => ({ key: String(h), label: `${h}:00`, align: 'right' as const })),
+        ],
+        activity.rows.map((r) => {
+          const row: Record<string, string | number> = { day: r.day }
+          activity.hours.forEach((h, hi) => (row[String(h)] = r.values[hi] ?? 0))
+          return row
+        }),
+        { unit: 'weekday', caption: 'Engagement intensity by weekday and hour' },
+      ),
+    [activity],
+  )
+
+  const weekdayData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'day', label: 'Weekday' },
+          { key: 'engagements', label: 'Engagements', align: 'right' },
+        ],
+        activity.rows.map((r) => ({ day: r.day, engagements: r.values.reduce((a, b) => a + b, 0) })),
+        { unit: 'weekday' },
+      ),
+    [activity],
+  )
+
+  const weeklyData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Week' },
+          { key: 'gained', label: 'Gained', align: 'right' },
+          { key: 'lost', label: 'Lost', align: 'right' },
+          { key: 'net', label: 'Net', align: 'right' },
+        ],
+        weekly.map((w) => ({ label: w.label, gained: w.gained, lost: w.lost, net: w.net })),
+        { unit: 'week', caption: 'New followers by acquisition week' },
+      ),
+    [weekly],
+  )
+
+  const deviceData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Device' },
+          { key: 'share', label: 'Share', align: 'right', format: (v: number) => `${v.toFixed(1)}%` },
+        ],
+        ds.demographics.device.map((d) => ({ label: d.label, share: d.share })),
+        { unit: 'device' },
+      ),
+    [ds],
+  )
+
+  const geoData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'country', label: 'Country' },
+          { key: 'followers', label: 'Followers', align: 'right' },
+          { key: 'share', label: 'Share', align: 'right', format: (v: number) => `${v.toFixed(1)}%` },
+        ],
+        ds.demographics.geo.slice(0, 8).map((g) => ({ country: g.country, followers: g.followers, share: g.share })),
+        { unit: 'country', caption: 'Top geographies by follower share' },
+      ),
+    [ds],
+  )
+
+  const ageData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'bucket', label: 'Age band' },
+          { key: 'share', label: 'Share', align: 'right', format: (v: number) => `${v.toFixed(1)}%` },
+        ],
+        ds.demographics.ages.map((a) => ({ bucket: a.bucket, share: a.share })),
+        { unit: 'age band', caption: 'Audience age distribution' },
+      ),
+    [ds],
+  )
+
+  const retentionData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Signal' },
+          { key: 'value', label: 'Count', align: 'right' },
+        ],
+        [
+          { name: 'New in scope', value: gained },
+          { name: 'Unfollows', value: lost },
+          { name: 'Net', value: gained - lost },
+          { name: 'Returning share', value: Number((returning * 100).toFixed(1)) },
+        ],
+        { unit: 'signal', caption: 'Retention signal: acquisition, churn and returning share' },
+      ),
+    [gained, lost, returning],
+  )
+
 
   if (!settled) {
     return (
@@ -102,12 +245,14 @@ export function AudiencePage() {
             }
           />
           <div className="p-4">
-            <MetricTrend
-              rows={timeline as unknown as Parameters<typeof MetricTrend>[0]['rows']}
-              mode="stacked"
-              series={[{ id: metric, type: 'area', key: metric, label: 'Total audience' }]}
-              height={250}
-            />
+            <ChartPanel bare data={growthData}>
+              <MetricTrend
+                rows={timeline as unknown as Parameters<typeof MetricTrend>[0]['rows']}
+                mode="stacked"
+                series={[{ id: metric, type: 'area', key: metric, label: 'Total audience' }]}
+                height={250}
+              />
+            </ChartPanel>
             <p className="mt-2 text-[10.5px] text-ink-faint">
               Stacked by platform. The visible steps are publish days — replays arrive within 36 hours of a release.
             </p>
@@ -118,10 +263,12 @@ export function AudiencePage() {
           <Panel>
             <PanelHeader dense icon={<Users />} title="By platform" subtitle="Composition of your audience" />
             <div className="space-y-3 p-3.5">
-              <ShareBar
-                segments={perPlatform.map((p) => ({ id: p.platform, label: platformById(p.platform).name, value: p.followers, color: platformById(p.platform).color }))}
-                showLabels
-              />
+              <ChartPanel bare data={compositionData}>
+                <ShareBar
+                  segments={perPlatform.map((p) => ({ id: p.platform, label: platformById(p.platform).name, value: p.followers, color: platformById(p.platform).color }))}
+                  showLabels
+                />
+              </ChartPanel>
               <div className="space-y-2 border-t border-line-1 pt-3">
                 {perPlatform.map((p) => (
                   <div key={p.platform} className="flex items-center gap-3">
@@ -142,7 +289,9 @@ export function AudiencePage() {
             <PanelHeader dense icon={<Users />} title="Retention signal" subtitle="How much of the audience keeps coming back" />
             <div className="grid grid-cols-2 gap-3 p-3.5">
               <div className="flex flex-col items-center justify-center">
-                <Gauge value={returning * 100} label="returning" color="#A78BFA" size={140} />
+                <ChartPanel bare data={retentionData}>
+                  <Gauge value={returning * 100} label="returning" color="#A78BFA" size={140} />
+                </ChartPanel>
               </div>
               <div className="space-y-3">
                 <KeyValue label="New in scope" value={fmtNumber(gained)} hint="followers gained" mono />
@@ -164,61 +313,67 @@ export function AudiencePage() {
             actions={<Badge tone="accent" size="xs">engagement index</Badge>}
           />
           <div className="p-4">
-            <ActivityGrid rows={activity.rows} hours={activity.hours} color="#5B9DFF" />
+            <ChartPanel bare data={activityData}>
+              <ActivityGrid rows={activity.rows} hours={activity.hours} color="#5B9DFF" />
+            </ChartPanel>
             <div className="mt-4 grid gap-3.5 border-t border-line-1 pt-4 sm:grid-cols-2">
               <div>
                 <p className="cell-label mb-2">By weekday</p>
-                <MetricBars
-                  height={150}
-                  rows={activity.rows.map((r, i) => ({
-                    label: r.day,
-                    value: r.values.reduce((s, v) => s + v, 0),
-                    engagements: r.values.reduce((s, v) => s + v, 0),
-                    views: 0,
-                    reach: 0,
-                    impressions: 0,
-                    likes: 0,
-                    comments: 0,
-                    shares: 0,
-                    saves: 0,
-                    watchMinutes: 0,
-                    followersGained: 0,
-                    clicks: 0,
-                    revenue: 0,
-                    engagementRate: 0,
-                    followers: 0,
-                    date: `d${i}`,
-                    id: r.day,
-                  }))}
-                  series={[{ id: 'engagements', key: 'engagements', label: 'Engagements', color: '#5B9DFF', metricId: 'engagements' }]}
-                />
+                <ChartPanel bare data={weekdayData}>
+                  <MetricBars
+                    height={150}
+                    rows={activity.rows.map((r, i) => ({
+                      label: r.day,
+                      value: r.values.reduce((s, v) => s + v, 0),
+                      engagements: r.values.reduce((s, v) => s + v, 0),
+                      views: 0,
+                      reach: 0,
+                      impressions: 0,
+                      likes: 0,
+                      comments: 0,
+                      shares: 0,
+                      saves: 0,
+                      watchMinutes: 0,
+                      followersGained: 0,
+                      clicks: 0,
+                      revenue: 0,
+                      engagementRate: 0,
+                      followers: 0,
+                      date: `d${i}`,
+                      id: r.day,
+                    }))}
+                    series={[{ id: 'engagements', key: 'engagements', label: 'Engagements', color: '#5B9DFF', metricId: 'engagements' }]}
+                  />
+                </ChartPanel>
               </div>
               <div>
                 <p className="cell-label mb-2">New followers by week</p>
-                <MetricBars
-                  height={150}
-                  rows={weekly.map((w) => ({
-                    label: w.label,
-                    value: w.net,
-                    engagements: 0,
-                    views: 0,
-                    reach: 0,
-                    impressions: 0,
-                    likes: 0,
-                    comments: 0,
-                    shares: 0,
-                    saves: 0,
-                    watchMinutes: 0,
-                    followersGained: w.gained,
-                    clicks: 0,
-                    revenue: 0,
-                    engagementRate: 0,
-                    followers: 0,
-                    date: w.start,
-                    id: w.start,
-                  }))}
-                  series={[{ id: 'followersGained', key: 'followersGained', label: 'Gained', color: '#34D399', metricId: 'followersGained' }]}
-                />
+                <ChartPanel bare data={weeklyData}>
+                  <MetricBars
+                    height={150}
+                    rows={weekly.map((w) => ({
+                      label: w.label,
+                      value: w.net,
+                      engagements: 0,
+                      views: 0,
+                      reach: 0,
+                      impressions: 0,
+                      likes: 0,
+                      comments: 0,
+                      shares: 0,
+                      saves: 0,
+                      watchMinutes: 0,
+                      followersGained: w.gained,
+                      clicks: 0,
+                      revenue: 0,
+                      engagementRate: 0,
+                      followers: 0,
+                      date: w.start,
+                      id: w.start,
+                    }))}
+                    series={[{ id: 'followersGained', key: 'followersGained', label: 'Gained', color: '#34D399', metricId: 'followersGained' }]}
+                  />
+                </ChartPanel>
               </div>
             </div>
           </div>
@@ -228,6 +383,7 @@ export function AudiencePage() {
           <Panel>
             <PanelHeader dense icon={<Users />} title="Age" subtitle="Share of audience" />
             <div className="space-y-2.5 p-3.5">
+              <p className="sr-only">{summarizeChart('Audience age distribution', ageData)}</p>
               {ds.demographics.ages.map((a) => (
                 <div key={a.bucket} className="flex items-center gap-3">
                   <span className="mono w-12 shrink-0 text-[10.5px] text-ink-mid">{a.bucket}</span>
@@ -243,32 +399,36 @@ export function AudiencePage() {
           <Panel>
             <PanelHeader dense icon={<Users />} title="Device & format" />
             <div className="space-y-3 p-3.5">
-              <ShareBar
-                segments={ds.demographics.device.map((d, i) => ({
-                  id: d.label,
-                  label: d.label,
-                  value: d.share,
-                  color: ['#5B9DFF', '#38D6F5', '#A78BFA', '#34D399'][i % 4],
-                }))}
-                showLabels
-              />
+              <ChartPanel bare data={deviceData}>
+                <ShareBar
+                  segments={ds.demographics.device.map((d, i) => ({
+                    id: d.label,
+                    label: d.label,
+                    value: d.share,
+                    color: ['#5B9DFF', '#38D6F5', '#A78BFA', '#34D399'][i % 4],
+                  }))}
+                  showLabels
+                />
+              </ChartPanel>
             </div>
           </Panel>
 
           <Panel>
             <PanelHeader dense icon={<Users />} title="Top geographies" subtitle="By follower share" />
             <div className="p-3.5">
-              <RankedBars
-                height={200}
-                metricId="followers"
-                rows={ds.demographics.geo.slice(0, 8).map((g, i) => ({
-                  id: g.code,
-                  label: `${g.country}`,
-                  value: g.followers,
-                  color: i === 0 ? '#5B9DFF' : '#38D6F5',
-                  sub: `${g.share.toFixed(1)}% of audience`,
-                }))}
-              />
+              <ChartPanel bare data={geoData}>
+                <RankedBars
+                  height={200}
+                  metricId="followers"
+                  rows={ds.demographics.geo.slice(0, 8).map((g, i) => ({
+                    id: g.code,
+                    label: `${g.country}`,
+                    value: g.followers,
+                    color: i === 0 ? '#5B9DFF' : '#38D6F5',
+                    sub: `${g.share.toFixed(1)}% of audience`,
+                  }))}
+                />
+              </ChartPanel>
             </div>
           </Panel>
         </div>
@@ -282,6 +442,9 @@ export function AudiencePage() {
         />
         <div className="overflow-x-auto p-4">
           <table className="w-full border-separate border-spacing-[3px]">
+            <caption className="sr-only">
+              Cohort return rates. {cohorts.length} acquisition weeks, showing the share of each cohort still engaging up to six weeks later.
+            </caption>
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 bg-panel pr-3 text-left">
@@ -321,6 +484,8 @@ export function AudiencePage() {
                           className="block h-[26px] rounded-[5px] transition-transform duration-200 hover:scale-[1.04]"
                           style={{ background: `rgba(91,157,255,${0.08 + v * 0.62})` }}
                           title={`${fmtPercent(v * 100, 1)} still returning`}
+                          role="img"
+                          aria-label={`${row.label}, week ${i}: ${fmtPercent(v * 100, 1)} still returning`}
                         />
                       </td>
                     )

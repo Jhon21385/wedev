@@ -48,6 +48,7 @@ import type { ChartRow } from '@/analytics/queries'
 import { MetricTrend, Sparkline } from '@/components/charts/LineArea'
 import { MetricBars, RankedBars, ShareBar } from '@/components/charts/Bars'
 import { CalendarHeat, Gauge } from '@/components/charts/Special'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { MetricCard, MetricHero, PulseChip } from '@/components/metrics/MetricCard'
 import { FilterBar } from '@/components/shell/FilterBar'
 import { DataTable, type Column } from '@/components/ui/DataTable'
@@ -152,6 +153,112 @@ export function Dashboard() {
   const topics = useMemo(() => topicStats(ds, filters, { topLevelOnly: true }).slice(0, 5), [ds, filters])
   const perfRows = useMemo(() => contentRows(ds, filters).slice(0, 7), [ds, filters])
   const heat = useMemo(() => calendarHeatmap(ds, filters, 22), [ds, filters])
+
+  /* --- the series behind the pulse chart, exposed as a table on demand ---- */
+  const trendSource = useMemo(
+    () => (compare === 'none' ? chartRows : compare === 'year' ? compareRows.map((r) => ({ ...r, yearViews: r.prevViews })) : compareRows),
+    [chartRows, compareRows, compare],
+  )
+
+  const trendData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Date' },
+          ...trendMetrics.map((m) => ({
+            key: m,
+            label: TREND_METRICS.find((x) => x.id === m)!.label,
+            align: 'right' as const,
+            format: (v: number) => (m === 'watchMinutes' ? fmtDuration(v) : fmtNumber(v)),
+          })),
+        ],
+        trendSource.map((r) => {
+          const row: Record<string, string | number> = { label: r.label }
+          for (const m of trendMetrics) row[m] = r[m]
+          return row
+        }),
+        { unit: 'day', caption: `Daily metrics for the ${period.label} period` },
+      ),
+    [trendSource, trendMetrics, period.label],
+  )
+
+  const platformData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Platform' },
+          { key: 'reach', label: 'Reach', align: 'right' },
+          { key: 'followers', label: 'Followers', align: 'right' },
+          { key: 'engagementRate', label: 'Eng. rate', align: 'right', format: (v: number) => `${v.toFixed(2)}%` },
+          { key: 'publishedCount', label: 'Published', align: 'right' },
+        ],
+        platforms.map((p) => ({
+          name: p.name,
+          reach: p.reach,
+          followers: p.followers,
+          engagementRate: Number(p.engagementRate.toFixed(2)),
+          publishedCount: p.publishedCount,
+        })),
+        { unit: 'platform', caption: 'Platform reach, audience and output for the selected period' },
+      ),
+    [platforms],
+  )
+
+  const heatData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'date', label: 'Date' },
+          { key: 'value', label: 'Impressions', align: 'right' },
+          { key: 'published', label: 'Published', align: 'right' },
+        ],
+        heat.map((c) => ({ date: fmtDate(c.date, 'short'), value: c.value, published: c.published })),
+        { unit: 'day', caption: 'Daily impressions and publishing activity over the last 22 weeks' },
+      ),
+    [heat],
+  )
+
+  const topicData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Topic' },
+          { key: 'reach', label: 'Reach', align: 'right' },
+          { key: 'pieces', label: 'Pieces', align: 'right' },
+          { key: 'engagementRate', label: 'Eng. rate', align: 'right', format: (v: number) => `${v.toFixed(2)}%` },
+        ],
+        topics.map((t) => ({ name: t.name, reach: t.reach, pieces: t.pieces, engagementRate: Number(t.engagementRate.toFixed(2)) })),
+        { unit: 'topic', caption: 'Topic momentum by reach in the selected period' },
+      ),
+    [topics],
+  )
+
+  const rhythm = useMemo(() => publishRhythm(ds), [ds])
+  const rhythmData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'label', label: 'Week of' },
+          { key: 'youtube', label: 'YouTube', align: 'right' },
+          { key: 'instagram', label: 'Instagram', align: 'right' },
+          { key: 'linkedin', label: 'LinkedIn', align: 'right' },
+        ],
+        rhythm,
+        { unit: 'week', caption: 'Pieces published per week by platform, last six weeks' },
+      ),
+    [rhythm],
+  )
+
+  /* Creator health is six rings; a table adds nothing, so it gets a spoken
+     summary instead and keeps its rows semantic. */
+  const healthSummary = useMemo(() => {
+    const weakest = [...health].sort((a, b) => a.value - b.value)[0]
+    return (
+      `Creator health: ${health.length} signals, averaging ${Math.round(health.reduce((s, h) => s + h.value, 0) / Math.max(1, health.length))} out of 100.` +
+      (weakest ? ` Weakest is ${weakest.label} at ${Math.round(weakest.value)} — ${weakest.detail}.` : '')
+    )
+  }, [health])
+
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -328,21 +435,17 @@ export function Dashboard() {
                       ]}
                     />
                   </div>
-                  <MetricTrend
-                    rows={
-                      compare === 'none'
-                        ? chartRows
-                        : compare === 'year'
-                          ? compareRows.map((r) => ({ ...r, yearViews: r.prevViews }))
-                          : compareRows
-                    }
-                    series={trendMetrics.map((m) => ({ id: m, type: 'area' as const }))}
-                    mode={trendMode === 'line' ? 'line' : trendMode === 'stacked' ? 'stacked' : 'area'}
-                    compareKey={compare === 'none' ? undefined : compare === 'year' ? 'yearViews' : 'prevViews'}
-                    compareLabel={compare === 'previous' ? 'Previous period' : compare === 'year' ? 'Same period last year' : undefined}
-                    height={216}
-                    onPointClick={() => navigate('/analytics')}
-                  />
+                  <ChartPanel bare data={trendData} summary={`Creator pulse. ${narrative(totals, previous, platforms)}`}>
+                    <MetricTrend
+                      rows={trendSource}
+                      series={trendMetrics.map((m) => ({ id: m, type: 'area' as const }))}
+                      mode={trendMode === 'line' ? 'line' : trendMode === 'stacked' ? 'stacked' : 'area'}
+                      compareKey={compare === 'none' ? undefined : compare === 'year' ? 'yearViews' : 'prevViews'}
+                      compareLabel={compare === 'previous' ? 'Previous period' : compare === 'year' ? 'Same period last year' : undefined}
+                      height={216}
+                      onPointClick={() => navigate('/analytics')}
+                    />
+                  </ChartPanel>
                 </div>
               </div>
 
@@ -485,11 +588,13 @@ export function Dashboard() {
             }
           />
           <div className="p-4">
-            <ShareBar
-              segments={platforms.map((p) => ({ id: p.id, label: p.name, value: p.reach, color: p.color }))}
-              height={9}
-              showLabels
-            />
+            <ChartPanel bare data={platformData}>
+              <ShareBar
+                segments={platforms.map((p) => ({ id: p.id, label: p.name, value: p.reach, color: p.color }))}
+                height={9}
+                showLabels
+              />
+            </ChartPanel>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
               {platforms.map((p) => (
                 <button
@@ -529,7 +634,9 @@ export function Dashboard() {
         <Panel className="overflow-hidden">
           <PanelHeader dense icon={<Flame />} title="Posting consistency" subtitle="Impressions per day · dot = published" actions={<Badge tone="outline" size="xs" mono>22 weeks</Badge>} />
           <div className="p-4">
-            <CalendarHeat cells={heat} weeks={22} color="#5B9DFF" onSelectDay={() => navigate('/calendar')} />
+            <ChartPanel bare data={heatData}>
+              <CalendarHeat cells={heat} weeks={22} color="#5B9DFF" onSelectDay={() => navigate('/calendar')} />
+            </ChartPanel>
             <div className="mt-4 grid grid-cols-3 gap-3 border-t border-line-1 pt-3">
               <MiniStat label="Publish days" value={`${heat.filter((c) => c.published > 0).length}`} hint="last 22 weeks" />
               <MiniStat label="Best day" value={bestDay(heat).label} hint={bestDay(heat).value} />
@@ -565,6 +672,7 @@ export function Dashboard() {
         <div className="space-y-3.5">
           <Panel className="overflow-hidden">
             <PanelHeader dense icon={<Heart />} title="Creator health" subtitle="Six signals, weighted by what blocks you" actions={<Button size="xs" variant="ghost" onClick={() => navigate('/analytics?section=health')}>Detail</Button>} />
+            <p className="sr-only">{healthSummary}</p>
             <div className="space-y-2.5 p-4">
               {health.map((h) => {
                 const tone = h.status === 'good' ? '#34D399' : h.status === 'watch' ? '#FBBF24' : '#FB7185'
@@ -593,15 +701,17 @@ export function Dashboard() {
           <Panel className="overflow-hidden">
             <PanelHeader dense icon={<Target />} title="Topic momentum" subtitle="Top pillars by reach in period" actions={<Button size="xs" variant="ghost" onClick={() => navigate('/analytics?section=topics')}>Map</Button>} />
             <div className="p-4">
-              <RankedBars
-                rows={topics.map((t) => ({ id: t.id, label: t.name, value: t.reach, color: t.color, sub: `${t.pieces} pieces · ${t.engagementRate.toFixed(1)}% ER` }))}
-                metricId="reach"
-                height={168}
-                onSelect={(id) => {
-                  const t = topics.find((x) => x.id === id)
-                  openPanel('drill', { topicId: id, label: t?.name })
-                }}
-              />
+              <ChartPanel bare data={topicData}>
+                <RankedBars
+                  rows={topics.map((t) => ({ id: t.id, label: t.name, value: t.reach, color: t.color, sub: `${t.pieces} pieces · ${t.engagementRate.toFixed(1)}% ER` }))}
+                  metricId="reach"
+                  height={168}
+                  onSelect={(id) => {
+                    const t = topics.find((x) => x.id === id)
+                    openPanel('drill', { topicId: id, label: t?.name })
+                  }}
+                />
+              </ChartPanel>
             </div>
           </Panel>
         </div>
@@ -614,16 +724,18 @@ export function Dashboard() {
         <Panel className="xl:col-span-2">
           <PanelHeader dense icon={<Zap />} title="Output rhythm" subtitle="Pieces published per week, by platform" />
           <div className="p-4">
-            <MetricBars
-              rows={publishRhythm(ds)}
-              series={[
-                { id: 'yt', key: 'youtube', label: 'YouTube', color: '#FF5A5A', metricId: 'views' },
-                { id: 'ig', key: 'instagram', label: 'Instagram', color: '#D976FF', metricId: 'views' },
-                { id: 'li', key: 'linkedin', label: 'LinkedIn', color: '#4DA3FF', metricId: 'views' },
-              ]}
-              stacked
-              height={176}
-            />
+            <ChartPanel bare data={rhythmData}>
+              <MetricBars
+                rows={rhythm}
+                series={[
+                  { id: 'yt', key: 'youtube', label: 'YouTube', color: '#FF5A5A', metricId: 'views' },
+                  { id: 'ig', key: 'instagram', label: 'Instagram', color: '#D976FF', metricId: 'views' },
+                  { id: 'li', key: 'linkedin', label: 'LinkedIn', color: '#4DA3FF', metricId: 'views' },
+                ]}
+                stacked
+                height={176}
+              />
+            </ChartPanel>
           </div>
         </Panel>
 

@@ -28,6 +28,7 @@ import { Input, Segmented, Switch, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Overlay'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { RankedBars } from '@/components/charts/Bars'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 
 /* ============================================================================
    WORKFLOW
@@ -64,8 +65,36 @@ export function WorkflowPage() {
       color: t.color,
       sub: `${ds.content.filter((c) => c.typeId === t.id && c.performance).length} published`,
     }))
+
     .filter((x) => x.value > 0)
     .sort((a, b) => b.value - a.value)
+
+  /* Declared after the settle guard, so these are plain derivations — no hooks
+     below an early return. */
+  const cycleData = chartData(
+    [
+      { key: 'label', label: 'Content' },
+      { key: 'days', label: 'Days to publish', align: 'right' },
+    ],
+    ds.content
+      .filter((c) => c.publishDate)
+      .slice(-12)
+      .map((c) => ({
+        label: c.title.slice(0, 34),
+        days: Math.max(1, Math.round((+new Date(c.publishDate!) - +new Date(c.createdAt)) / 86_400_000)),
+      })),
+    { unit: 'piece', caption: 'Cycle time — days from creation to publish' },
+  )
+
+  const typeUsageData = chartData(
+    [
+      { key: 'label', label: 'Content type' },
+      { key: 'value', label: 'Pieces', align: 'right' },
+      { key: 'published', label: 'Published', align: 'right' },
+    ],
+    typeUsage.slice(0, 9).map((t) => ({ label: t.label, value: t.value, published: ds.content.filter((c) => c.typeId === t.id && c.performance).length })),
+    { unit: 'content type', caption: 'Catalogue distribution by content type' },
+  )
 
   return (
     <Page width="wide">
@@ -154,20 +183,22 @@ export function WorkflowPage() {
             <Panel>
               <PanelHeader dense icon={<Timer />} title="Cycle time" subtitle="Days from idea to publish, last 12 pieces" />
               <div className="p-3.5">
-                <RankedBars
-                  height={200}
-                  metricId="views"
-                  showValue={false}
-                  rows={ds.content
-                    .filter((c) => c.publishDate)
-                    .slice(-12)
-                    .map((c) => ({
-                      id: c.id,
-                      label: c.title.slice(0, 34),
-                      value: Math.max(1, Math.round((+new Date(c.publishDate!) - +new Date(c.createdAt)) / 86_400_000)),
-                      color: '#5B9DFF',
-                    }))}
-                />
+                <ChartPanel bare data={cycleData}>
+                  <RankedBars
+                    height={200}
+                    metricId="views"
+                    showValue={false}
+                    rows={ds.content
+                      .filter((c) => c.publishDate)
+                      .slice(-12)
+                      .map((c) => ({
+                        id: c.id,
+                        label: c.title.slice(0, 34),
+                        value: Math.max(1, Math.round((+new Date(c.publishDate!) - +new Date(c.createdAt)) / 86_400_000)),
+                        color: '#5B9DFF',
+                      }))}
+                  />
+                </ChartPanel>
                 <p className="mt-2 text-[10.5px] text-ink-faint">Bar length is days from creation to publish. Long bars cluster around research-heavy pieces.</p>
               </div>
             </Panel>
@@ -236,7 +267,9 @@ export function WorkflowPage() {
             <Panel>
               <PanelHeader dense icon={<Blocks />} title="Type usage" subtitle="Where your catalogue actually sits" />
               <div className="p-3.5">
-                <RankedBars height={240} metricId="views" rows={typeUsage.slice(0, 9)} />
+                <ChartPanel bare data={typeUsageData}>
+                  <RankedBars height={240} metricId="views" rows={typeUsage.slice(0, 9)} />
+                </ChartPanel>
               </div>
             </Panel>
             <Panel glow={1}>

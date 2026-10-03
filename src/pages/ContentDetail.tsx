@@ -46,6 +46,7 @@ import { Thumb } from '@/components/ui/Thumb'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { MetricTrend, Sparkline } from '@/components/charts/LineArea'
 import { RetentionBand } from '@/components/charts/Special'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { MetricCard } from '@/components/metrics/MetricCard'
 import { Page } from '@/components/ui/Page'
 
@@ -932,6 +933,25 @@ function PerformanceTab({
 
   const peak = seriesPoints.reduce((a, b) => (b.views > a.views ? b : a), seriesPoints[0])
 
+  const trendTable = chartData(
+    [
+      { key: 'date', label: 'Date' },
+      { key: 'views', label: 'Views', align: 'right' },
+      { key: 'reach', label: 'Reach', align: 'right' },
+    ],
+    seriesPoints.map((p) => ({ date: fmtDate(p.date, 'short'), views: p.views, reach: p.reach })),
+    { unit: 'day', caption: 'Daily views and reach for this piece' },
+  )
+
+  const retentionTable = chartData(
+    [
+      { key: 'pct', label: 'Position', format: (v: number) => `${v}%` },
+      { key: 'value', label: 'Still watching', align: 'right', format: (v: number) => `${v}%` },
+    ],
+    perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v })),
+    { unit: 'point', caption: 'Audience retention curve for this piece' },
+  )
+
   return (
     <div className="space-y-3.5">
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -958,7 +978,9 @@ function PerformanceTab({
           }
         />
         <div className="p-4">
-          <MetricTrend rows={rows} series={[{ id: 'views', type: 'area' }, { id: 'reach', type: 'line', axis: 'right' }]} mode="line" height={230} />
+          <ChartPanel bare data={trendTable}>
+            <MetricTrend rows={rows} series={[{ id: 'views', type: 'area' }, { id: 'reach', type: 'line', axis: 'right' }]} mode="line" height={230} />
+          </ChartPanel>
         </div>
       </Panel>
 
@@ -966,7 +988,9 @@ function PerformanceTab({
         <Panel>
           <PanelHeader dense icon={<Target />} title="Audience retention" subtitle="Average across all viewers, with best and worst decile" />
           <div className="p-4">
-            <RetentionBand points={perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v, best: v + 6, worst: Math.max(3, v - 9) }))} height={190} />
+            <ChartPanel bare data={retentionTable}>
+              <RetentionBand points={perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v, best: v + 6, worst: Math.max(3, v - 9) }))} height={190} />
+            </ChartPanel>
             <div className="mt-3 grid grid-cols-3 gap-3 border-t border-line-1 pt-3">
               <KeyValue label="Hook (first 30s)" value={`${perf.retentionCurve[1]}%`} hint="retained" />
               <KeyValue label="Midpoint" value={`${perf.retentionCurve[Math.floor(perf.retentionCurve.length / 2)]}%`} hint="retained" />

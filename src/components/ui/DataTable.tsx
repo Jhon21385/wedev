@@ -87,6 +87,8 @@ export function DataTable<T extends { id: string }>({
   const [scrollTop, setScrollTop] = useState(0)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
+  const [cursor, setCursor] = useState<number>(-1)
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([])
   const { ref: measureRef, height: viewportHeight } = useMeasure<HTMLDivElement>()
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
@@ -159,18 +161,31 @@ export function DataTable<T extends { id: string }>({
     <div className={cn('relative overflow-hidden rounded-xl border border-line-2 bg-panel', className)}>
       {caption && <p className="sr-only">{caption}</p>}
 
-      {/* ---- desktop / tablet: real table ---------------------------------- */}
-      <div ref={measureRef} className="hidden max-h-[calc(100vh-320px)] min-h-[200px] overflow-auto md:block" onScroll={(e) => setScrollTop((e.target as HTMLElement).scrollTop)}>
-        <div className={cn('min-w-full', stickyHeader && 'sticky top-0 z-10')}>
+      {/* ---- desktop / tablet: real table ----------------------------------
+          A grid role rather than a table: rows are sortable, selectable and
+          (optionally) reorderable, and a grid is what screen readers expect
+          for an interactive two-dimensional widget. */}
+      <div
+        ref={measureRef}
+        role="grid"
+        aria-label={caption ?? 'Data table'}
+        aria-rowcount={processed.length + 1}
+        aria-colcount={columns.length + (rowActions ? 1 : 0)}
+        className="hidden max-h-[calc(100vh-320px)] min-h-[200px] overflow-auto md:block"
+        onScroll={(e) => setScrollTop((e.target as HTMLElement).scrollTop)}
+      >
+        <div role="rowgroup" className={cn('min-w-full', stickyHeader && 'sticky top-0 z-10')}>
           <div
             className="grid items-center border-b border-line-2 bg-surface-1/95 backdrop-blur-xl"
             style={{ gridTemplateColumns: gridTemplate }}
             role="row"
+            aria-rowindex={1}
           >
-            {columns.map((c) => (
+            {columns.map((c, ci) => (
               <div
                 key={c.id}
                 role="columnheader"
+                aria-colindex={ci + 1}
                 aria-sort={sort?.id === c.id ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
                 className={cn(
                   'group/head relative flex h-8 min-w-0 items-center gap-1.5 px-3',
@@ -227,7 +242,7 @@ export function DataTable<T extends { id: string }>({
           </div>
         </div>
 
-        <div className="relative" style={shouldVirtualize ? { height: processed.length * slot } : undefined}>
+        <div role="rowgroup" className="relative" style={shouldVirtualize ? { height: processed.length * slot } : undefined}>
           <div style={shouldVirtualize ? { transform: `translateY(${startIndex * slot}px)` } : undefined}>
             {visible.map((row, i) => {
               const index = startIndex + i
@@ -245,13 +260,35 @@ export function DataTable<T extends { id: string }>({
                     </div>
                   )}
                   <div
+                    ref={(el) => {
+                      rowRefs.current[index] = el
+                    }}
                     role="row"
-                    tabIndex={0}
+                    aria-rowindex={index + 2}
+                    aria-selected={selectedId ? selectedId === row.id : undefined}
+                    tabIndex={cursor === -1 ? (index === 0 ? 0 : -1) : cursor === index ? 0 : -1}
                     onClick={(e) => (e.shiftKey || e.metaKey || e.altKey ? (onRowActivate ?? onRowClick)?.(row) : onRowClick?.(row))}
+                    onFocus={() => setCursor(index)}
                     onMouseEnter={() => onRowHover?.(row)}
                     onMouseLeave={() => onRowHover?.(null)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') onRowClick?.(row)
+                      if (e.key === 'Enter') {
+                        onRowClick?.(row)
+                        return
+                      }
+                      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+                        if (!processed.length) return
+                        e.preventDefault()
+                        const last = processed.length - 1
+                        const next =
+                          e.key === 'Home'
+                            ? 0
+                            : e.key === 'End'
+                              ? last
+                              : Math.min(last, Math.max(0, index + (e.key === 'ArrowDown' ? 1 : -1)))
+                        setCursor(next)
+                        rowRefs.current[next]?.focus()
+                      }
                     }}
                     draggable={reorderable}
                     onDragStart={() => reorderable && setDragIndex(index)}
@@ -280,6 +317,8 @@ export function DataTable<T extends { id: string }>({
                     {columns.map((c, ci) => (
                       <div
                         key={c.id}
+                        role="gridcell"
+                        aria-colindex={ci + 1}
                         className={cn(
                           'flex min-w-0 items-center px-3',
                           c.align === 'right' && 'justify-end',
@@ -295,7 +334,11 @@ export function DataTable<T extends { id: string }>({
                         <span className="min-w-0 flex-1 truncate">{c.cell(row, index)}</span>
                       </div>
                     ))}
-                    {rowActions && <div className="flex h-full items-center justify-end pr-2 opacity-0 transition-opacity group-hover/row:opacity-100">{rowActions(row)}</div>}
+                    {rowActions && (
+                      <div role="gridcell" aria-colindex={columns.length + 1} className="flex h-full items-center justify-end pr-2 opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
+                        {rowActions(row)}
+                      </div>
+                    )}
                   </div>
                 </div>
               )

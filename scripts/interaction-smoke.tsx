@@ -231,6 +231,26 @@ await act(async () => {
   await unmount(h)
 }
 
+/* --- 10. every chart has an accessible summary and a data-table view ------ */
+{
+  const h = await mount('/')
+  const summaries = [...h.container.querySelectorAll('p.sr-only')].map((el) => text(el)).filter(Boolean)
+  const toggles = [...h.container.querySelectorAll('button')].filter((b) => (b.getAttribute('aria-label') ?? '').includes('as a table'))
+  const before = h.container.querySelectorAll('table').length
+  if (toggles[0]) await click(toggles[0])
+  const after = h.container.querySelectorAll('table').length
+  const caption = h.container.querySelector('table caption')
+  check(
+    'charts expose a spoken summary and a show-as-table toggle',
+    summaries.length > 0 && toggles.length > 0 && after > before && !!caption,
+    `${summaries.length} summary/summaries, ${toggles.length} toggle(s), ${before} → ${after} table(s)`,
+  )
+  if (toggles[0]) await click(toggles[0])
+  const restored = h.container.querySelectorAll('table').length
+  check('toggling back restores the chart', restored === before, `${after} → ${restored} table(s)`)
+  await unmount(h)
+}
+
 const failed = results.filter((r) => !r.ok)
 console.log(failed.length === 0 ? `\nAll ${results.length} interaction checks passed.` : `\n${failed.length} of ${results.length} checks failed.`)
 process.exit(failed.length === 0 ? 0 : 1)

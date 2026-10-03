@@ -19,11 +19,13 @@ npm run build      # tsc -b && vite build
 | Content | **Calendar** | Month, week and platform swimlanes; drag to reschedule with conflict detection; cadence rail with gap analysis; unscheduled backlog |
 | Workspace | **Idea vault** | Board, scoring table, cluster portfolio and topic map; five-dimension visual scoring; promotion into the content pipeline |
 | Workspace | **Research hub** | Grid, list and research map; credibility grading, data points, citations back to the content that uses them, evidence-gap analysis |
-| Analysis | **Analytics** | 13 sections at Power BI depth: overview composites, growth with comparison windows, reach, engagement mix, retention curves, platform capability matrix, topic treemap, format table, content performance matrix with four quadrants, funnel, cadence heat, efficiency waterfall and creator health |
+| Analysis | **Analytics** | 13 sections at Power BI depth: overview composites, growth with comparison windows, reach, engagement mix, retention curves, platform capability matrix, topic treemap, format capability radar + ledger, content performance matrix with four quadrants, funnel, cadence heat, efficiency waterfall and creator health |
 | Analysis | **Content DNA** | Creator → Platform → Topic → Content → Performance drill-through from any chart or matrix cell |
 | Analysis | **Audience** | Growth by platform, attention windows, demographics, cohort return rates — deliberately not overpopulated |
 | Business | **Revenue** | Sources, concentration risk, monthly waterfall, brand-deal entities with deliverables, invoices (including overdue chasing), expenses |
 | Workspace | **Assets / Brand / Inbox / Workflow / Settings** | Asset library with visual previews and orphan detection; brand mini-OS (voice, palette, type, thumbnail rules, pillars, CTAs); signal inbox with rules; workflow with a working content-type builder; settings with real preferences and data-integrity checks |
+
+Every chart is readable two ways: hover it and a **Show as table** affordance swaps the visual for the exact rows underneath, and a screen-reader summary is derived from those same rows — span, extremes and net direction — so it can never drift from what is drawn. Data grids are real `grid` widgets with roving tabindex, arrow-key navigation and proper row/column indices.
 
 Cross-cutting: ⌘K command palette, `/` search, `C` create, `I` idea, `A` analytics, `Esc`, breadcrumbs, quick create, global filters that every screen honours, tooltips, autosave indicators, optimistic updates with undo, designed empty states, skeleton loaders, an error boundary with Retry + cached-data recovery, keyboard and ARIA support, reduced-motion and high-contrast modes.
 
@@ -59,7 +61,8 @@ npm run smoke:render   # renders all 19 routes into JSDOM, flushes effects and t
                        # then asserts real page content appeared with no NaN/undefined
 npm run smoke:flows    # drives real interactions: command palette, status changes with
                        # undo, board drag & drop, platform filtering, idea promotion,
-                       # research filtering, motion preference, asset drawer
+                       # research filtering, motion preference, asset drawer, and the
+                       # chart accessible-summary / show-as-table toggles
 npm run verify         # typecheck + all three harnesses
 ```
 
@@ -68,9 +71,10 @@ The render harness catches what a type-check cannot: undefined access in derived
 ## Design rules
 
 - Dark only, near-black cockpit palette, one electric-blue accent, violet/cyan/emerald/amber secondaries, red reserved for warnings.
-- The JARVIS signature is a single ambient glow on active, selected and focused surfaces — never everywhere.
+- The JARVIS signature is a single ambient glow on active, selected and focused surfaces — never everywhere. The one animated border in the product (`aura`) is reserved for the surface that owns its screen.
 - Motion 200–300 ms and only to communicate change, origin, activity or attention; fully disabled by reduced-motion.
 - No glassmorphism, neon, fake 3D, particle fields or decorative charts. No pie charts. Cards are meaningful containers, not decoration.
+- Pointer-driven effects appear in exactly one place — the cursor-aware spotlight on asset previews — so they read as material, not as a gimmick.
 - Dense but calm: borders, spacing and typography carry the hierarchy.
 - Tokens, not literals: four durations, three easing curves, a fluid display scale and one hairline grid drive every surface — `src/index.css` is the single stylesheet.
 - Materials separate by a 1px inner highlight, not by heavier borders; hover lifts, pressed states move 0.5px, and the only sweeping light in the product is on the primary action.
