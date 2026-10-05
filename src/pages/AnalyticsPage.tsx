@@ -41,6 +41,7 @@ import {
 } from '@/analytics/queries'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Page, PageHeader, MetricStrip } from '@/components/ui/Page'
+import { DescriptionList } from '@/components/ui/blocks'
 import { Segmented } from '@/components/ui/Field'
 import { FilterBar } from '@/components/shell/FilterBar'
 import { MetricTrend, Sparkline } from '@/components/charts/LineArea'
@@ -618,14 +619,14 @@ export function AnalyticsPage() {
 
           <Panel className="p-4">
             <PanelHeader dense icon={<Users />} title="Scope" subtitle="What this page is currently describing" />
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3.5">
+            <DescriptionList className="mt-3">
               <KeyValue label="Period" value={`${fmtDateShort(trends.period.from)} → ${fmtDateShort(trends.period.to)}`} hint={`${trends.period.days} days`} mono />
               <KeyValue label="Granularity" value={trends.granularity} hint="auto-selected" />
               <KeyValue label="Content objects" value={String(content.length)} hint={`${content.filter((c) => c.status === 'published').length} published`} mono />
               <KeyValue label="Platforms" value={platforms.map((x) => platformById(x.id).short).join(' · ')} />
               <KeyValue label="Comparison" value={compare === 'none' ? 'off' : compare === 'previous' ? 'previous period' : 'same period last year'} />
               <KeyValue label="Scope mode" value={scoped.scoped ? 'content-attributed' : 'platform aggregate'} />
-            </div>
+            </DescriptionList>
             <p className="mt-3 border-t border-line-1 pt-3 text-[10.5px] leading-relaxed text-ink-faint">
               {scoped.scoped
                 ? 'Content filters are active, so every metric above is summed from the daily series of the matching content objects.'

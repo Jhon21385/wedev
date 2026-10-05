@@ -27,6 +27,7 @@ import type { ResearchItem } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { DescriptionList, EntityRow, StickyActions } from '@/components/ui/blocks'
 import { Segmented, SearchInput, Combobox } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { BubbleMatrix } from '@/components/charts/Special'
@@ -451,14 +452,14 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
 
           {item.summary && <p className="mt-3 text-[12px] leading-relaxed text-ink-mid">{item.summary}</p>}
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-line-2 pt-4">
+          <DescriptionList divider>
             <KeyValue label="Kind" value={KIND_META[item.kind].label} />
             <KeyValue label="Topic" value={topicById(item.topicId).name} />
             <KeyValue label="Credibility" value={`${item.credibility} / 5`} />
             <KeyValue label="Added" value={fmtDate(item.createdAt, 'long')} mono />
             {item.source && <KeyValue label="Source" value={item.source} />}
             <KeyValue label="Cited by" value={`${item.linkedContentIds.length} pieces`} />
-          </div>
+          </DescriptionList>
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between">
@@ -494,11 +495,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
                   if (!c) return null
                   return (
                     <li key={cid}>
-                      <button onClick={() => onOpenContent(cid)} className="flex w-full items-center gap-2.5 rounded-lg border border-line-2 px-2.5 py-2 text-left transition-colors hover:border-line-3 hover:bg-white/[0.03]">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: platformById(c.platforms[0]).color }} />
-                        <span className="min-w-0 flex-1 truncate text-[11.5px] text-ink">{c.title}</span>
-                        <ArrowUpRight className="h-3 w-3 shrink-0 text-ink-ghost" />
-                      </button>
+                      <EntityRow color={platformById(c.platforms[0]).color} title={c.title} onClick={() => onOpenContent(cid)} arrow />
                     </li>
                   )
                 })}
@@ -514,7 +511,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
             <a
               href={item.url}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] text-accent transition-colors hover:text-accent-ink"
             >
               <ExternalLink className="h-3 w-3" /> Open original
@@ -529,7 +526,8 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
             ))}
           </div>
 
-          <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+          <StickyActions>
+
             <Button variant="ghost" size="md" onClick={onClose}>
               Close
             </Button>
@@ -546,7 +544,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
                 Side panel
               </Button>
             </Tooltip>
-          </div>
+</StickyActions>
         </div>
       )}
     </Drawer>

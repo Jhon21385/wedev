@@ -28,6 +28,7 @@ import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
 import { Input, Segmented, Switch } from '@/components/ui/Field'
 import { Kbd } from '@/components/ui/Tooltip'
 import { Avatar } from '@/components/ui/Surface'
+import { ConnectionsTab } from '@/components/integrations/ConnectionsTab'
 
 /* ============================================================================
    SETTINGS
@@ -265,53 +266,7 @@ export function SettingsPage() {
         </SplitGrid>
       )}
 
-      {tab === 'connections' && (
-        <Panel>
-          <PanelHeader
-            icon={<Plug />}
-            title="Platform connections"
-            subtitle="Live platforms stream metrics daily. Ready platforms are architecturally supported — connect one and its data shape is already understood."
-            actions={<Badge tone="success" size="xs">{LIVE_PLATFORMS.length} live</Badge>}
-          />
-          <ul className="divide-y divide-[var(--color-line-1)]">
-            {PLATFORMS.map((p) => {
-              const samples = ds.metrics.filter((m) => m.platform === p.id).length
-              const published = ds.content.filter((c) => c.platforms.includes(p.id) && c.performance).length
-              return (
-                <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border" style={{ borderColor: `${p.color}44`, background: `${p.color}14` }}>
-                    <span className="mono text-[10px] font-semibold" style={{ color: p.color }}>
-                      {p.short}
-                    </span>
-                  </span>
-                  <span className="min-w-[160px] flex-1">
-                    <span className="block text-[12.5px] text-ink-hi">{p.name}</span>
-                    <span className="block text-[10.5px] text-ink-low">
-                      {p.status === 'live'
-                        ? `${fmtNumber(samples)} daily samples · ${published} published pieces`
-                        : 'Supported by the data model — not connected'}
-                    </span>
-                  </span>
-                  {p.status === 'live' ? (
-                    <Badge tone="success" size="xs">
-                      <Activity className="h-2.5 w-2.5" /> connected
-                    </Badge>
-                  ) : (
-                    <Button size="xs" variant="secondary" icon={<Zap />} onClick={() => pushToast({ kind: 'info', title: `${p.name} connection`, body: 'This platform is supported — the data model already fits it.' })}>
-                      Connect
-                    </Button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-          <div className="border-t border-line-2 p-3.5">
-            <p className="text-[10.5px] leading-relaxed text-ink-faint">
-              Nothing is hidden behind a disabled state: adding a newsletter, podcast or X account uses the same entity model, the same analytics layer and the same pipeline.
-            </p>
-          </div>
-        </Panel>
-      )}
+      {tab === 'connections' && <ConnectionsTab />}
 
       {tab === 'types' && <TypesTab />}
 

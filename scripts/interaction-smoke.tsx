@@ -251,6 +251,80 @@ await act(async () => {
   await unmount(h)
 }
 
+function setNativeValue(el: HTMLElement, value: string) {
+  const proto = el instanceof dom.window.HTMLTextAreaElement ? dom.window.HTMLTextAreaElement.prototype : dom.window.HTMLInputElement.prototype
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+  setter?.call(el, value)
+  el.dispatchEvent(new dom.window.Event('input', { bubbles: true }))
+}
+
+/** Finds a form control by its visible label — the composer wires every field
+    through htmlFor, so this exercises the real accessibility contract. */
+function fieldByLabel(root: Element, label: string) {
+  const lab = ([...root.querySelectorAll('label')] as HTMLLabelElement[]).find((l) => (l.textContent ?? '').trim().startsWith(label))
+  const id = lab?.htmlFor
+  return id ? (dom.window.document.getElementById(id) as HTMLElement | null) : null
+}
+
+/* --- 11. composer: pre-flight gates publishing, then it runs end-to-end -- */
+{
+  const h = await mount('/compose')
+  const publishBtn = ([...h.container.querySelectorAll('button')] as HTMLButtonElement[]).find((b) =>
+    /^Publish( to \d+)?$/.test(text(b).trim()),
+  )
+  check('publish is gated until the required fields validate', !!publishBtn?.disabled, `disabled: ${publishBtn?.disabled}`)
+
+  const title = fieldByLabel(h.container, 'Title')
+  const description = fieldByLabel(h.container, 'Description')
+  check('every composer field is labelled and addressable', !!title && !!description)
+
+  if (title && description) {
+    await act(async () => {
+      setNativeValue(title, 'How I built my first AI agent')
+      setNativeValue(description, 'Nine days, four failures, and the architecture that finally held together.')
+    })
+    const ready = ([...h.container.querySelectorAll('button')] as HTMLButtonElement[]).find((b) =>
+      /^Publish( to \d+)?$/.test(text(b).trim()),
+    )
+    check('filling required fields unlocks publishing', ready?.disabled === false, `label: "${text(ready)}"`)
+
+    if (ready) {
+      await click(ready)
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 1400))
+      })
+      const body = text(h.container)
+      const toast = useApp.getState().toasts.at(-1)
+      check('publishing produces a receipt with the executed tool slug', /Published to|Publish failed/.test(body) && /YOUTUBE_/.test(body), toast?.title)
+      check('a toast reports the outcome', toast?.title?.startsWith('Published') === true, toast?.title)
+    }
+  }
+  await unmount(h)
+}
+
+/* --- 12. connections: Composio without a proxy degrades, never crashes --- */
+{
+  const h = await mount('/settings?tab=connections')
+  const before = useApp.getState().transport
+  const composio = findByText(h.container, 'button', 'Composio')
+  if (composio) await click(composio)
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 600))
+  })
+  const body = text(h.container)
+  const switched = useApp.getState().transport === 'composio'
+  check(
+    'selecting the Composio transport surfaces the missing-key state instead of failing',
+    switched && /No API key behind the proxy/.test(body),
+    `transport: ${before} → ${useApp.getState().transport}`,
+  )
+  check('the connection cards still render every toolkit', /youtube/i.test(body) && /instagram/i.test(body) && /linkedin/i.test(body))
+  await act(async () => {
+    useApp.getState().setTransport('local')
+  })
+  await unmount(h)
+}
+
 const failed = results.filter((r) => !r.ok)
 console.log(failed.length === 0 ? `\nAll ${results.length} interaction checks passed.` : `\n${failed.length} of ${results.length} checks failed.`)
 process.exit(failed.length === 0 ? 0 : 1)

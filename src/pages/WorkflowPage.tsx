@@ -24,6 +24,7 @@ import type { ContentTypeDef } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { Inset } from '@/components/ui/blocks'
 import { Input, Segmented, Switch, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Overlay'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -532,7 +533,7 @@ function TypeBuilder({ open, onClose, onCreate }: { open: boolean; onClose: () =
           </div>
         </div>
 
-        <div className="rounded-lg border border-line-2 bg-white/[0.016] p-3">
+        <Inset>
           <p className="cell-label mb-2">Preview</p>
           <div className="flex items-center gap-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-lg border" style={{ borderColor: `${color}44`, background: `${color}14` }}>
@@ -543,7 +544,7 @@ function TypeBuilder({ open, onClose, onCreate }: { open: boolean; onClose: () =
               <span className="block text-[10.5px] text-ink-low">{fields.length} fields · {fmtNumber(0)} pieces</span>
             </span>
           </div>
-        </div>
+        </Inset>
       </div>
     </Modal>
   )

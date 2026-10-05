@@ -24,6 +24,7 @@ import type { Asset } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { DescriptionList, StickyActions } from '@/components/ui/blocks'
 import { Segmented, SearchInput, Combobox } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { Thumb } from '@/components/ui/Thumb'
@@ -372,14 +373,14 @@ function AssetDrawer({ asset, onClose }: { asset: Asset | null; onClose: () => v
             <p className="text-[15px] font-semibold text-ink-hi">{asset.name}</p>
             <p className="mono mt-1 text-[10.5px] text-ink-faint">{asset.folder}</p>
 
-            <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-line-2 pt-4">
+            <DescriptionList divider>
               <KeyValue label="Kind" value={meta.label} />
               <KeyValue label="MIME" value={asset.mime} mono />
               <KeyValue label="Size" value={fmtBytes(asset.size)} mono />
               <KeyValue label="Dimensions" value={asset.dims ?? '—'} mono />
               {asset.duration && <KeyValue label="Duration" value={asset.duration} mono />}
               <KeyValue label="Added" value={fmtDate(asset.createdAt, 'long')} mono />
-            </div>
+            </DescriptionList>
 
             <div className="mt-4">
               <p className="cell-label mb-2">Used in {asset.usedIn.length} piece{asset.usedIn.length === 1 ? '' : 's'}</p>
@@ -426,7 +427,8 @@ function AssetDrawer({ asset, onClose }: { asset: Asset | null; onClose: () => v
               </div>
             </div>
 
-            <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+            <StickyActions>
+
               <Button variant="ghost" size="md" onClick={onClose}>
                 Close
               </Button>
@@ -438,7 +440,7 @@ function AssetDrawer({ asset, onClose }: { asset: Asset | null; onClose: () => v
               <Button variant="primary" size="md" className="ml-auto" icon={<Upload />} onClick={() => useApp.getState().pushToast({ kind: 'success', title: 'New version uploaded', body: 'Previous version kept for 30 days.' })}>
                 Replace
               </Button>
-            </div>
+</StickyActions>
           </div>
         </div>
       )}

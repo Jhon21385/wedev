@@ -27,6 +27,7 @@ import type { Idea } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { DescriptionList, StickyActions } from '@/components/ui/blocks'
 import { Segmented, Slider, Textarea } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { BubbleMatrix } from '@/components/charts/Special'
@@ -579,14 +580,14 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line-2 pt-4">
+          <DescriptionList divider className="gap-y-3">
             <KeyValue label="Topic" value={topicById(idea.topicId).name} />
             <KeyValue label="Cluster" value={clusterById(idea.clusterId).name} />
             <KeyValue label="Format" value={formatById(idea.format).name} />
             <KeyValue label="Potential" value={`${idea.potential}/5`} />
             <KeyValue label="Status" value={STATUS_META[idea.status].label} />
             <KeyValue label="Added" value={fmtDate(idea.createdAt, 'long')} mono />
-          </div>
+          </DescriptionList>
 
           <div className="mt-4">
             <p className="cell-label mb-1.5">Problem it solves</p>
@@ -623,7 +624,8 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             <Textarea rows={3} defaultValue={idea.notes} className="text-[12px]" />
           </div>
 
-          <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+          <StickyActions>
+
             <Button variant="ghost" size="md" onClick={onClose}>
               Close
             </Button>
@@ -633,7 +635,7 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             <Button variant="primary" size="md" icon={<Rocket />} className="ml-auto" onClick={() => onPromoted(idea.title)}>
               Promote to content
             </Button>
-          </div>
+</StickyActions>
 
           {idea.promotedContentId && (
             <p className="mt-3 flex items-center gap-2 text-[11px] text-emerald">

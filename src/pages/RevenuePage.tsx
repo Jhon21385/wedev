@@ -21,6 +21,7 @@ import type { BrandDeal } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton, StatusPill } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { CheckRow, DescriptionList, Inset, StickyActions } from '@/components/ui/blocks'
 import { Segmented, SearchInput } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { FilterBar } from '@/components/shell/FilterBar'
@@ -447,14 +448,14 @@ function DealDrawer({ deal, onClose }: { deal: BrandDeal | null; onClose: () => 
             </Badge>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-line-2 pt-4">
+          <DescriptionList divider>
             <KeyValue label="Fee" value={fmtCurrency(deal.fee)} mono />
             <KeyValue label="Payment" value={deal.paymentStatus} />
             <KeyValue label="Deadline" value={fmtDate(deal.deadline, 'long')} hint={fmtRelativeFuture(deal.deadline)} mono />
             <KeyValue label="Industry" value={deal.industry} />
             <KeyValue label="Contact" value={deal.contact} />
             <KeyValue label="Deliverables" value={`${deal.deliverables.filter((d) => d.done).length} / ${deal.deliverables.length}`} />
-          </div>
+          </DescriptionList>
 
           <div className="mt-4">
             <p className="cell-label mb-2">Deliverables</p>
@@ -462,12 +463,8 @@ function DealDrawer({ deal, onClose }: { deal: BrandDeal | null; onClose: () => 
               {deal.deliverables.map((d) => {
                 const days = relativeDays(d.due)
                 return (
-                  <li key={d.id} className="flex items-center gap-2.5 rounded-lg border border-line-2 px-2.5 py-2">
-                    <span className={cn('grid h-4 w-4 shrink-0 place-items-center rounded-[5px] border', d.done ? 'border-emerald/45 bg-emerald/15' : 'border-line-3')}>
-                      {d.done && <CheckCircle2 className="h-3 w-3 text-emerald" />}
-                    </span>
-                    <span className={cn('min-w-0 flex-1 truncate text-[11.5px]', d.done ? 'text-ink-low line-through decoration-line-3' : 'text-ink')}>{d.label}</span>
-                    <span className={cn('mono shrink-0 text-[9.5px]', !d.done && days !== null && days < 0 ? 'text-rose' : 'text-ink-faint')}>{fmtDate(d.due, 'short')}</span>
+                  <li key={d.id}>
+                    <CheckRow done={d.done} label={d.label} meta={fmtDate(d.due, 'short')} metaTone={!d.done && days !== null && days < 0 ? 'warn' : 'muted'} />
                   </li>
                 )
               })}
@@ -499,12 +496,13 @@ function DealDrawer({ deal, onClose }: { deal: BrandDeal | null; onClose: () => 
             </div>
           )}
 
-          <div className="mt-4 rounded-lg border border-line-2 bg-white/[0.016] p-3">
+          <Inset className="mt-4">
             <p className="cell-label mb-1.5">Notes</p>
             <p className="text-[11.5px] leading-relaxed text-ink-mid">{deal.notes}</p>
-          </div>
+          </Inset>
 
-          <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+          <StickyActions>
+
             <Button variant="ghost" size="md" onClick={onClose}>
               Close
             </Button>
@@ -514,7 +512,7 @@ function DealDrawer({ deal, onClose }: { deal: BrandDeal | null; onClose: () => 
             <Button variant="primary" size="md" className="ml-auto" icon={<CheckCircle2 />} onClick={() => pushToast({ kind: 'success', title: 'Deal advanced', body: `${deal.brand} moved forward in the pipeline.` })}>
               Advance stage
             </Button>
-          </div>
+</StickyActions>
         </div>
       )}
     </Drawer>

@@ -31,6 +31,7 @@ import { NotFound } from '@/pages/NotFound'
 /* Heavy analytical screens are code-split; the shell paints instantly. */
 const AnalyticsLazy = lazy(() => import('@/pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })))
 const AssetsLazy = lazy(() => import('@/pages/AssetsPage').then((m) => ({ default: m.AssetsPage })))
+const ComposeLazy = lazy(() => import('@/pages/ComposePage'))
 
 export function App() {
   const toasts = useApp((s) => s.toasts)
@@ -173,6 +174,7 @@ export function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/content" element={<ContentDatabase />} />
               <Route path="/content/:id" element={<ContentDetail />} />
+              <Route path="/compose" element={<ComposeLazy />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/ideas" element={<IdeasPage />} />
               <Route path="/research" element={<ResearchPage />} />

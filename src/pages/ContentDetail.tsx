@@ -23,6 +23,7 @@ import {
   Plus,
   Rocket,
   Save,
+  Send,
   Sparkles,
   Tag,
   Target,
@@ -49,6 +50,7 @@ import { RetentionBand } from '@/components/charts/Special'
 import { ChartPanel, chartData } from '@/components/charts/kit'
 import { MetricCard } from '@/components/metrics/MetricCard'
 import { Page } from '@/components/ui/Page'
+import { DescriptionList, Inset } from '@/components/ui/blocks'
 
 /* ============================================================================
    CONTENT DETAIL — the workspace
@@ -226,6 +228,9 @@ export function ContentDetail() {
                 </>
               )}
             </span>
+            <Button size="sm" variant="primary" icon={<Send className="h-3.5 w-3.5" />} onClick={() => navigate(`/compose?content=${content.id}`)}>
+              Compose
+            </Button>
             <Segmented
               ariaLabel="Set status"
               size="sm"
@@ -1001,14 +1006,14 @@ function PerformanceTab({
 
         <Panel>
           <PanelHeader dense icon={<Layers />} title="Engagement breakdown" />
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 p-4">
+          <DescriptionList padded>
             <KeyValue label="Likes" value={fmtNumber(perf.likes)} mono />
             <KeyValue label="Comments" value={fmtNumber(perf.comments)} mono />
             <KeyValue label="Shares" value={fmtNumber(perf.shares)} mono />
             <KeyValue label="Saves" value={fmtNumber(perf.saves)} mono />
             <KeyValue label="Link clicks" value={fmtNumber(perf.clicks)} mono />
             <KeyValue label="Revenue" value={`$${perf.revenue.toFixed(2)}`} mono />
-          </div>
+          </DescriptionList>
           <div className="border-t border-line-1 p-3.5">
             <ShareBreakdown perf={perf} />
           </div>
@@ -1102,7 +1107,7 @@ function PublishModal({
           </label>
         </div>
 
-        <div className="rounded-lg border border-line-2 bg-white/[0.016] p-3">
+        <Inset>
           <p className="cell-label mb-2">Best performing slots for your audience</p>
           <div className="flex flex-wrap gap-1.5">
             {bestSlots.map((s) => (
@@ -1118,7 +1123,7 @@ function PublishModal({
               </button>
             ))}
           </div>
-        </div>
+        </Inset>
 
         <div>
           <div className="mb-2 flex items-center justify-between">
@@ -1144,7 +1149,7 @@ function PublishModal({
           )}
         </div>
 
-        <div className="rounded-lg border border-line-2 bg-white/[0.016] p-3">
+        <Inset>
           <p className="cell-label mb-2">On publish</p>
           <ul className="space-y-1.5">
             {[
@@ -1158,7 +1163,7 @@ function PublishModal({
               </li>
             ))}
           </ul>
-        </div>
+        </Inset>
       </div>
     </Modal>
   )
