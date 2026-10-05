@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Database, LayoutDashboard, Lightbulb, MoreHorizontal, Plus } from 'lucide-react'
+import { BarChart3, Database, LayoutDashboard, Lightbulb, MoreHorizontal, PenLine, Plus } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/store/app'
 
@@ -17,6 +17,7 @@ export function MobileNav() {
   const items = [
     { id: 'dash', label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { id: 'content', label: 'Content', href: '/content', icon: Database },
+    { id: 'compose', label: 'Compose', href: '/compose', icon: PenLine },
     { id: 'ideas', label: 'Ideas', href: '/ideas', icon: Lightbulb },
     { id: 'analytics', label: 'Analytics', href: '/analytics', icon: BarChart3 },
   ]
@@ -26,7 +27,7 @@ export function MobileNav() {
       aria-label="Mobile navigation"
       className="fixed inset-x-0 bottom-0 z-40 flex h-[58px] items-stretch border-t border-line-2 bg-deep/92 pb-[env(safe-area-inset-bottom)] shadow-[0_-14px_38px_-26px_rgba(0,0,0,1)] backdrop-blur-xl lg:hidden"
     >
-      {items.slice(0, 2).map((it) => (
+      {items.slice(0, 3).map((it) => (
         <MobileItem key={it.id} {...it} active={isActive(location.pathname, it.href)} />
       ))}
 
@@ -40,7 +41,7 @@ export function MobileNav() {
         </button>
       </div>
 
-      {items.slice(2).map((it) => (
+      {items.slice(3).map((it) => (
         <MobileItem key={it.id} {...it} active={isActive(location.pathname, it.href)} />
       ))}
 

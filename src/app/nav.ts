@@ -39,6 +39,7 @@ export interface NavItem {
 export const PRIMARY_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/', icon: LayoutDashboard, shortcut: 'D' },
   { id: 'content', label: 'Content', href: '/content', icon: Database, shortcut: 'C' },
+  { id: 'compose', label: 'Compose', href: '/compose', icon: PenLine, badge: 'glow' },
   { id: 'calendar', label: 'Calendar', href: '/calendar', icon: CalendarDays },
   { id: 'research', label: 'Research', href: '/research', icon: FlaskConical },
   { id: 'analytics', label: 'Analytics', href: '/analytics', icon: BarChart3, shortcut: 'A' },
@@ -67,6 +68,7 @@ export const ALL_NAV = [...PRIMARY_NAV, ...WORKSPACE_NAV, ...UTILITY_NAV]
 export const BREADCRUMB_MAP: Record<string, string> = {
   '': 'Dashboard',
   content: 'Content',
+  compose: 'Compose',
   calendar: 'Calendar',
   research: 'Research',
   analytics: 'Analytics',

@@ -16,6 +16,7 @@ import {
   Palette,
   Plus,
   Search,
+  Send,
   Settings,
   Sparkles,
   TrendingUp,
@@ -52,6 +53,7 @@ interface CommandItem {
 const NAV_COMMANDS = [
   { id: 'go-dashboard', label: 'Dashboard', route: '/', icon: <TrendingUp />, hint: 'D' },
   { id: 'go-content', label: 'Content database', route: '/content', icon: <Database />, hint: 'C' },
+  { id: 'go-compose', label: 'Compose and publish', route: '/compose', icon: <Send /> },
   { id: 'go-calendar', label: 'Calendar', route: '/calendar', icon: <CalendarDays /> },
   { id: 'go-ideas', label: 'Idea vault', route: '/ideas', icon: <Lightbulb />, hint: 'I' },
   { id: 'go-research', label: 'Research hub', route: '/research', icon: <FlaskConical /> },

@@ -27,10 +27,12 @@ import type { Idea } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { DescriptionList, StickyActions } from '@/components/ui/blocks'
 import { Segmented, Slider, Textarea } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { BubbleMatrix } from '@/components/charts/Special'
 import { ShareBar } from '@/components/charts/Bars'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 import { Tooltip } from '@/components/ui/Tooltip'
 
@@ -85,6 +87,78 @@ export function IdeasPage() {
       promotionRate: (promoted / (ideas.length || 1)) * 100,
     }
   }, [ideas])
+
+  /* Idea portfolio tables — the same numbers the charts plot. */
+  const clusterData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Cluster' },
+          { key: 'ideas', label: 'Ideas', align: 'right' },
+          { key: 'avgScore', label: 'Avg score', align: 'right', format: (v: number) => `${Math.round(v)}/100` },
+          { key: 'potential', label: 'Reach potential', align: 'right' },
+        ],
+        ds.clusters
+          .map((c) => {
+            const items = summary.scored.filter((x) => x.idea.clusterId === c.id)
+            const avg = items.length ? items.reduce((a, x) => a + x.score, 0) / items.length : 0
+            return { name: c.name, ideas: items.length, avgScore: Math.round(avg), potential: items.reduce((a, x) => a + x.idea.potential, 0) }
+          })
+          .filter((r) => r.ideas > 0),
+        { unit: 'cluster', caption: 'Idea clusters by volume and average quality' },
+      ),
+    [ds, summary],
+  )
+
+  const balanceData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Cluster' },
+          { key: 'ideas', label: 'Ideas', align: 'right' },
+        ],
+        ds.clusters.map((c) => ({ name: c.name, ideas: summary.scored.filter((x) => x.idea.clusterId === c.id).length })),
+        { unit: 'cluster', caption: 'Portfolio balance across clusters' },
+      ),
+    [ds, summary],
+  )
+
+  const stageMixData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'stage', label: 'Stage' },
+          { key: 'ideas', label: 'Ideas', align: 'right' },
+        ],
+        STATUS_ORDER.map((st) => ({ stage: STATUS_META[st].label, ideas: ideas.filter((i) => i.status === st).length })),
+        { unit: 'stage', caption: 'Idea stage mix' },
+      ),
+    [ideas],
+  )
+
+  const matrixData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'title', label: 'Idea' },
+          { key: 'topic', label: 'Topic' },
+          { key: 'effort', label: 'Effort', align: 'right', format: (v: number) => `${v}/5` },
+          { key: 'score', label: 'Score', align: 'right', format: (v: number) => `${Math.round(v)}/100` },
+          { key: 'potential', label: 'Potential', align: 'right', format: (v: number) => `${v}/5` },
+          { key: 'status', label: 'Status' },
+        ],
+        summary.scored.map(({ idea, score }) => ({
+          title: idea.title,
+          topic: topicById(idea.topicId).name,
+          effort: idea.scores.effort,
+          score: Math.round(score),
+          potential: idea.potential,
+          status: idea.status,
+        })),
+        { unit: 'idea', caption: 'Ideas plotted by effort against composite score' },
+      ),
+    [summary],
+  )
 
   if (!settled) {
     return (
@@ -228,56 +302,62 @@ export function IdeasPage() {
               subtitle="Clusters positioned by volume and average quality — bubble is reach potential"
             />
             <div className="p-3">
-              <BubbleMatrix
-                height={236}
-                xLabel="Ideas in cluster"
-                yLabel="Average score"
-                zLabel="Reach potential"
-                xFormat={(v) => `${Math.round(v)} ideas`}
-                yFormat={(v) => `${Math.round(v)}/100`}
-                zFormat={(v) => `${v} total potential`}
-                points={ds.clusters
-                  .map((c) => {
-                    const items = summary.scored.filter((s) => s.idea.clusterId === c.id)
-                    const avg = items.length ? items.reduce((s, x) => s + x.score, 0) / items.length : 0
-                    const reach = items.reduce((s, x) => s + x.idea.potential, 0)
-                    return {
-                      id: c.id,
-                      x: items.length,
-                      y: Math.round(avg),
-                      z: reach,
-                      color: c.color,
-                      label: c.name,
-                      platform: `${items.length} ideas`,
-                      meta: `avg ${Math.round(avg)}/100 · ${reach} reach potential`,
-                    }
-                  })
-                  .filter((p) => p.x > 0)}
-                onSelect={(id) => {
-                  const list = summary.scored.filter((s) => s.idea.clusterId === id).sort((a, b) => b.score - a.score)
-                  if (list[0]) setOpenId(list[0].idea.id)
-                }}
-              />
+              <ChartPanel bare data={clusterData}>
+                <BubbleMatrix
+                  height={236}
+                  xLabel="Ideas in cluster"
+                  yLabel="Average score"
+                  zLabel="Reach potential"
+                  xFormat={(v) => `${Math.round(v)} ideas`}
+                  yFormat={(v) => `${Math.round(v)}/100`}
+                  zFormat={(v) => `${v} total potential`}
+                  points={ds.clusters
+                    .map((c) => {
+                      const items = summary.scored.filter((s) => s.idea.clusterId === c.id)
+                      const avg = items.length ? items.reduce((s, x) => s + x.score, 0) / items.length : 0
+                      const reach = items.reduce((s, x) => s + x.idea.potential, 0)
+                      return {
+                        id: c.id,
+                        x: items.length,
+                        y: Math.round(avg),
+                        z: reach,
+                        color: c.color,
+                        label: c.name,
+                        platform: `${items.length} ideas`,
+                        meta: `avg ${Math.round(avg)}/100 · ${reach} reach potential`,
+                      }
+                    })
+                    .filter((p) => p.x > 0)}
+                  onSelect={(id) => {
+                    const list = summary.scored.filter((s) => s.idea.clusterId === id).sort((a, b) => b.score - a.score)
+                    if (list[0]) setOpenId(list[0].idea.id)
+                  }}
+                />
+              </ChartPanel>
             </div>
           </Panel>
           <Panel className="h-fit">
             <PanelHeader dense icon={<TrendingUp />} title="Portfolio balance" subtitle="Where your attention is currently pointed" />
             <div className="p-3.5">
-              <ShareBar
-                segments={ds.clusters.map((c) => ({
-                  id: c.id,
-                  label: c.name,
-                  value: summary.scored.filter((s) => s.idea.clusterId === c.id).length,
-                  color: c.color,
-                }))}
-                showLabels
-              />
-              <div className="mt-4 space-y-2.5 border-t border-line-1 pt-3.5">
-                <p className="cell-label">Stage mix</p>
+              <ChartPanel bare data={balanceData}>
                 <ShareBar
-                  segments={STATUS_ORDER.map((s) => ({ id: s, label: STATUS_META[s].label, value: ideas.filter((i) => i.status === s).length, color: STATUS_META[s].color }))}
+                  segments={ds.clusters.map((c) => ({
+                    id: c.id,
+                    label: c.name,
+                    value: summary.scored.filter((s) => s.idea.clusterId === c.id).length,
+                    color: c.color,
+                  }))}
                   showLabels
                 />
+              </ChartPanel>
+              <div className="mt-4 space-y-2.5 border-t border-line-1 pt-3.5">
+                <p className="cell-label">Stage mix</p>
+                <ChartPanel bare data={stageMixData}>
+                  <ShareBar
+                    segments={STATUS_ORDER.map((s) => ({ id: s, label: STATUS_META[s].label, value: ideas.filter((i) => i.status === s).length, color: STATUS_META[s].color }))}
+                    showLabels
+                  />
+                </ChartPanel>
               </div>
             </div>
           </Panel>
@@ -294,8 +374,9 @@ export function IdeasPage() {
             actions={<Badge tone="accent" size="xs">promotion zone</Badge>}
           />
           <div className="p-4">
-            <BubbleMatrix
-              height={420}
+            <ChartPanel bare data={matrixData}>
+              <BubbleMatrix
+                height={420}
               xLabel="Effort to produce (1 easy → 5 heavy)"
               yLabel="Composite score (audience + originality + strategy)"
               zLabel="Potential reach"
@@ -318,7 +399,8 @@ export function IdeasPage() {
                   meta: `${topic.name} · ${idea.status}`,
                 }
               })}
-            />
+              />
+            </ChartPanel>
           </div>
           <div className="flex flex-wrap items-center gap-4 border-t border-line-2 px-4 py-2.5">
             <span className="text-[10.5px] text-ink-faint">Quadrants: high impact / low effort → promote first · low impact / high effort → park</span>
@@ -498,14 +580,14 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             ))}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line-2 pt-4">
+          <DescriptionList divider className="gap-y-3">
             <KeyValue label="Topic" value={topicById(idea.topicId).name} />
             <KeyValue label="Cluster" value={clusterById(idea.clusterId).name} />
             <KeyValue label="Format" value={formatById(idea.format).name} />
             <KeyValue label="Potential" value={`${idea.potential}/5`} />
             <KeyValue label="Status" value={STATUS_META[idea.status].label} />
             <KeyValue label="Added" value={fmtDate(idea.createdAt, 'long')} mono />
-          </div>
+          </DescriptionList>
 
           <div className="mt-4">
             <p className="cell-label mb-1.5">Problem it solves</p>
@@ -542,7 +624,8 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             <Textarea rows={3} defaultValue={idea.notes} className="text-[12px]" />
           </div>
 
-          <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+          <StickyActions>
+
             <Button variant="ghost" size="md" onClick={onClose}>
               Close
             </Button>
@@ -552,7 +635,7 @@ function IdeaDrawer({ idea, onClose, onPromoted }: { idea: Idea | null; onClose:
             <Button variant="primary" size="md" icon={<Rocket />} className="ml-auto" onClick={() => onPromoted(idea.title)}>
               Promote to content
             </Button>
-          </div>
+</StickyActions>
 
           {idea.promotedContentId && (
             <p className="mt-3 flex items-center gap-2 text-[11px] text-emerald">

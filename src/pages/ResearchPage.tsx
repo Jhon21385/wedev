@@ -27,10 +27,12 @@ import type { ResearchItem } from '@/data/types'
 import { Badge, EmptyState, KeyValue, Panel, PanelHeader, Progress, Skeleton } from '@/components/ui/Surface'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Page, PageHeader, MetricStrip, SplitGrid } from '@/components/ui/Page'
+import { DescriptionList, EntityRow, StickyActions } from '@/components/ui/blocks'
 import { Segmented, SearchInput, Combobox } from '@/components/ui/Field'
 import { Drawer } from '@/components/ui/Overlay'
 import { BubbleMatrix } from '@/components/charts/Special'
 import { Distribution, RankedBars } from '@/components/charts/Bars'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 import { Tooltip } from '@/components/ui/Tooltip'
 
@@ -76,6 +78,52 @@ export function ResearchPage() {
   }, [ds.research, kind, topic, query])
 
   const open = ds.research.find((r) => r.id === openId) ?? null
+
+  /* Tables behind the research map and the coverage chart. */
+  const mapData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'title', label: 'Source' },
+          { key: 'topic', label: 'Topic' },
+          { key: 'kind', label: 'Kind' },
+          { key: 'days', label: 'Age (days)', align: 'right' },
+          { key: 'credibility', label: 'Credibility', align: 'right', format: (v: number) => `${v}/5` },
+          { key: 'cites', label: 'Citations', align: 'right' },
+        ],
+        ds.research.map((r) => ({
+          title: r.title,
+          topic: topicById(r.topicId).name,
+          kind: KIND_META[r.kind].label,
+          days: Math.max(1, Math.round((+new Date(ds.todayKey) - +new Date(r.createdAt)) / 86_400_000)),
+          credibility: r.credibility,
+          cites: r.linkedContentIds.length,
+        })),
+        { unit: 'source', caption: 'Research map — credibility against recency' },
+      ),
+    [ds],
+  )
+
+  const coverageData = useMemo(
+    () =>
+      chartData(
+        [
+          { key: 'name', label: 'Topic' },
+          { key: 'sources', label: 'Sources', align: 'right' },
+          { key: 'sourced', label: 'Pieces sourced', align: 'right' },
+        ],
+        ds.topics
+          .map((t) => ({
+            name: t.name,
+            sources: ds.research.filter((r) => r.topicId === t.id).length,
+            sourced: ds.content.filter((c) => c.topicId === t.id && c.researchIds.length > 0).length,
+          }))
+          .filter((r) => r.sources > 0)
+          .sort((a, b) => b.sources - a.sources),
+        { unit: 'topic', caption: 'Research coverage by topic' },
+      ),
+    [ds],
+  )
 
   const stats = useMemo(() => {
     const linked = ds.research.filter((r) => r.linkedContentIds.length)
@@ -203,9 +251,10 @@ export function ResearchPage() {
               subtitle="Vertical: credibility · horizontal: how recent · bubble: how many pieces cite it"
             />
             <div className="p-4">
-              <BubbleMatrix
-                height={420}
-                xLabel="Days since added (recent → older)"
+              <ChartPanel bare data={mapData}>
+                <BubbleMatrix
+                  height={420}
+                  xLabel="Days since added (recent → older)"
                 yLabel="Credibility (1–5)"
                 zLabel="Linked content"
                 xFormat={(v) => `${Math.round(v)}d`}
@@ -227,7 +276,8 @@ export function ResearchPage() {
                     meta: `${KIND_META[r.kind].label} · ${r.linkedContentIds.length} citation${r.linkedContentIds.length === 1 ? '' : 's'}`,
                   }
                 })}
-              />
+                />
+              </ChartPanel>
             </div>
           </Panel>
           <div className="space-y-3.5">
@@ -402,14 +452,14 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
 
           {item.summary && <p className="mt-3 text-[12px] leading-relaxed text-ink-mid">{item.summary}</p>}
 
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-line-2 pt-4">
+          <DescriptionList divider>
             <KeyValue label="Kind" value={KIND_META[item.kind].label} />
             <KeyValue label="Topic" value={topicById(item.topicId).name} />
             <KeyValue label="Credibility" value={`${item.credibility} / 5`} />
             <KeyValue label="Added" value={fmtDate(item.createdAt, 'long')} mono />
             {item.source && <KeyValue label="Source" value={item.source} />}
             <KeyValue label="Cited by" value={`${item.linkedContentIds.length} pieces`} />
-          </div>
+          </DescriptionList>
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between">
@@ -445,11 +495,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
                   if (!c) return null
                   return (
                     <li key={cid}>
-                      <button onClick={() => onOpenContent(cid)} className="flex w-full items-center gap-2.5 rounded-lg border border-line-2 px-2.5 py-2 text-left transition-colors hover:border-line-3 hover:bg-white/[0.03]">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: platformById(c.platforms[0]).color }} />
-                        <span className="min-w-0 flex-1 truncate text-[11.5px] text-ink">{c.title}</span>
-                        <ArrowUpRight className="h-3 w-3 shrink-0 text-ink-ghost" />
-                      </button>
+                      <EntityRow color={platformById(c.platforms[0]).color} title={c.title} onClick={() => onOpenContent(cid)} arrow />
                     </li>
                   )
                 })}
@@ -465,7 +511,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
             <a
               href={item.url}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-1.5 text-[11.5px] text-accent transition-colors hover:text-accent-ink"
             >
               <ExternalLink className="h-3 w-3" /> Open original
@@ -480,7 +526,8 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
             ))}
           </div>
 
-          <div className="sticky bottom-0 -mx-4 mt-5 flex items-center gap-2 border-t border-line-2 bg-surface-1/95 px-4 py-3 backdrop-blur-xl">
+          <StickyActions>
+
             <Button variant="ghost" size="md" onClick={onClose}>
               Close
             </Button>
@@ -497,7 +544,7 @@ function ResearchDrawer({ item, onClose, onOpenContent }: { item: ResearchItem |
                 Side panel
               </Button>
             </Tooltip>
-          </div>
+</StickyActions>
         </div>
       )}
     </Drawer>

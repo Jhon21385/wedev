@@ -553,14 +553,16 @@
     inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Animated conic hairline that orbits a selected surface. */
+/* Animated conic hairline that orbits a selected surface. Sits at inset 0
+   rather than -1px so it survives the `overflow-hidden` every panel uses to
+   clip its own corners — an outset ring would simply be clipped away. */
 @utility aura {
   position: relative;
   isolation: isolate;
   &::before {
     content: '';
     position: absolute;
-    inset: -1px;
+    inset: 0;
     border-radius: inherit;
     padding: 1px;
     background: conic-gradient(

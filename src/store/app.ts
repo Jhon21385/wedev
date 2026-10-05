@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { Content, ContentTypeDef, PlatformId } from '@/data/types'
 import { EMPTY_FILTERS, type FilterState } from '@/analytics/queries'
 import type { PeriodPreset } from '@/analytics/periods'
+import type { ConnectedAccount, TransportId } from '@/integrations/types'
+import { seedLocalState } from '@/integrations/local'
 
 /* ============================================================================
    APPLICATION STATE
@@ -94,6 +96,18 @@ interface AppState {
   /* --- recents -------------------------------------------------------- */
   recents: { id: string; title: string; href: string; at: number }[]
   visit: (entry: { id: string; title: string; href: string }) => void
+
+  /* --- integrations ---------------------------------------------------- */
+  /** Which transport publishing uses. 'composio' only works once a key is set
+      behind the proxy; 'local' is the deterministic stand-in. */
+  transport: TransportId
+  setTransport: (t: TransportId) => void
+  /** Account state owned by the local transport, persisted across reloads. */
+  localAccounts: ConnectedAccount[]
+  setLocalAccounts: (accounts: ConnectedAccount[]) => void
+  /** Composio user id the connected accounts are scoped to. */
+  integrationUserId: string
+  setIntegrationUserId: (id: string) => void
 }
 
 let toastSeq = 0
@@ -178,6 +192,13 @@ export const useApp = create<AppState>((set, get) => ({
       const filtered = s.recents.filter((r) => r.id !== entry.id)
       return { recents: [{ ...entry, at: Date.now() }, ...filtered].slice(0, 8) }
     }),
+
+  transport: 'local',
+  setTransport: (t) => set({ transport: t }),
+  localAccounts: seedLocalState('creator-local').accounts,
+  setLocalAccounts: (accounts) => set({ localAccounts: accounts }),
+  integrationUserId: 'creator-local',
+  setIntegrationUserId: (id) => set({ integrationUserId: id }),
 }))
 
 /* --- convenience selectors ------------------------------------------------- */

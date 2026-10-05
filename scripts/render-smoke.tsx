@@ -84,6 +84,9 @@ const routes: { path: string; marker: string }[] = [
   { path: '/brand', marker: 'Voice' },
   { path: '/inbox', marker: 'Notification rules' },
   { path: '/workflow', marker: 'Content types' },
+  { path: '/compose', marker: 'Shared source' },
+  { path: '/compose?content=ct-agent', marker: 'Pre-flight' },
+  { path: '/settings?tab=connections', marker: 'Publishing transport' },
   { path: '/settings?tab=types', marker: 'Workflow stages' },
   { path: '/nope', marker: 'This route does not exist' },
 ]

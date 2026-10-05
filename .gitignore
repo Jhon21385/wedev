@@ -14,3 +14,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# environment samples are committed; real ones are not
+.env.*
+!.env.example

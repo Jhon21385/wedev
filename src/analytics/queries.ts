@@ -675,6 +675,7 @@ export interface FormatStat {
   name: string
   views: number
   reach: number
+  engagements: number
   engagementRate: number
   retention: number
   followersGained: number
@@ -700,6 +701,7 @@ export function formatStats(ds: Dataset, f: FilterState): FormatStat[] {
         name: def.name,
         views: 0,
         reach: 0,
+        engagements: 0,
         engagementRate: 0,
         retention: 0,
         followersGained: 0,
@@ -713,6 +715,7 @@ export function formatStats(ds: Dataset, f: FilterState): FormatStat[] {
     }
     s.views += r.views
     s.reach += r.reach
+    s.engagements += r.engagements
     s.followersGained += r.followersGained
     s.revenue += r.revenue
     s.pieces += 1
@@ -720,10 +723,12 @@ export function formatStats(ds: Dataset, f: FilterState): FormatStat[] {
     s.retention += r.retention
   }
   for (const s of map.values()) {
-    s.engagementRate = s.reach > 0 ? (s.followersGained / s.reach) * 100 : 0
+    s.engagementRate = s.reach > 0 ? (s.engagements / s.reach) * 100 : 0
     s.retention = s.pieces ? s.retention / s.pieces : 0
     s.viewsPerHour = s.effort ? s.views / s.effort : 0
-    s.conversion = s.reach > 0 ? (s.followersGained / s.reach) * 100 : 0
+    /* Conversion is audience won per view — deliberately not the same thing as
+       engagement rate, which is response per account reached. */
+    s.conversion = s.views > 0 ? (s.followersGained / s.views) * 100 : 0
   }
   return [...map.values()].sort((a, b) => b.views - a.views)
 }

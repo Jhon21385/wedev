@@ -23,6 +23,7 @@ import {
   Plus,
   Rocket,
   Save,
+  Send,
   Sparkles,
   Tag,
   Target,
@@ -46,8 +47,10 @@ import { Thumb } from '@/components/ui/Thumb'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { MetricTrend, Sparkline } from '@/components/charts/LineArea'
 import { RetentionBand } from '@/components/charts/Special'
+import { ChartPanel, chartData } from '@/components/charts/kit'
 import { MetricCard } from '@/components/metrics/MetricCard'
 import { Page } from '@/components/ui/Page'
+import { DescriptionList, Inset } from '@/components/ui/blocks'
 
 /* ============================================================================
    CONTENT DETAIL — the workspace
@@ -225,6 +228,9 @@ export function ContentDetail() {
                 </>
               )}
             </span>
+            <Button size="sm" variant="primary" icon={<Send className="h-3.5 w-3.5" />} onClick={() => navigate(`/compose?content=${content.id}`)}>
+              Compose
+            </Button>
             <Segmented
               ariaLabel="Set status"
               size="sm"
@@ -932,6 +938,25 @@ function PerformanceTab({
 
   const peak = seriesPoints.reduce((a, b) => (b.views > a.views ? b : a), seriesPoints[0])
 
+  const trendTable = chartData(
+    [
+      { key: 'date', label: 'Date' },
+      { key: 'views', label: 'Views', align: 'right' },
+      { key: 'reach', label: 'Reach', align: 'right' },
+    ],
+    seriesPoints.map((p) => ({ date: fmtDate(p.date, 'short'), views: p.views, reach: p.reach })),
+    { unit: 'day', caption: 'Daily views and reach for this piece' },
+  )
+
+  const retentionTable = chartData(
+    [
+      { key: 'pct', label: 'Position', format: (v: number) => `${v}%` },
+      { key: 'value', label: 'Still watching', align: 'right', format: (v: number) => `${v}%` },
+    ],
+    perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v })),
+    { unit: 'point', caption: 'Audience retention curve for this piece' },
+  )
+
   return (
     <div className="space-y-3.5">
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -958,7 +983,9 @@ function PerformanceTab({
           }
         />
         <div className="p-4">
-          <MetricTrend rows={rows} series={[{ id: 'views', type: 'area' }, { id: 'reach', type: 'line', axis: 'right' }]} mode="line" height={230} />
+          <ChartPanel bare data={trendTable}>
+            <MetricTrend rows={rows} series={[{ id: 'views', type: 'area' }, { id: 'reach', type: 'line', axis: 'right' }]} mode="line" height={230} />
+          </ChartPanel>
         </div>
       </Panel>
 
@@ -966,7 +993,9 @@ function PerformanceTab({
         <Panel>
           <PanelHeader dense icon={<Target />} title="Audience retention" subtitle="Average across all viewers, with best and worst decile" />
           <div className="p-4">
-            <RetentionBand points={perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v, best: v + 6, worst: Math.max(3, v - 9) }))} height={190} />
+            <ChartPanel bare data={retentionTable}>
+              <RetentionBand points={perf.retentionCurve.map((v, i, arr) => ({ pct: Math.round(((i + 0.5) / arr.length) * 100), value: v, best: v + 6, worst: Math.max(3, v - 9) }))} height={190} />
+            </ChartPanel>
             <div className="mt-3 grid grid-cols-3 gap-3 border-t border-line-1 pt-3">
               <KeyValue label="Hook (first 30s)" value={`${perf.retentionCurve[1]}%`} hint="retained" />
               <KeyValue label="Midpoint" value={`${perf.retentionCurve[Math.floor(perf.retentionCurve.length / 2)]}%`} hint="retained" />
@@ -977,14 +1006,14 @@ function PerformanceTab({
 
         <Panel>
           <PanelHeader dense icon={<Layers />} title="Engagement breakdown" />
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 p-4">
+          <DescriptionList padded>
             <KeyValue label="Likes" value={fmtNumber(perf.likes)} mono />
             <KeyValue label="Comments" value={fmtNumber(perf.comments)} mono />
             <KeyValue label="Shares" value={fmtNumber(perf.shares)} mono />
             <KeyValue label="Saves" value={fmtNumber(perf.saves)} mono />
             <KeyValue label="Link clicks" value={fmtNumber(perf.clicks)} mono />
             <KeyValue label="Revenue" value={`$${perf.revenue.toFixed(2)}`} mono />
-          </div>
+          </DescriptionList>
           <div className="border-t border-line-1 p-3.5">
             <ShareBreakdown perf={perf} />
           </div>
@@ -1078,7 +1107,7 @@ function PublishModal({
           </label>
         </div>
 
-        <div className="rounded-lg border border-line-2 bg-white/[0.016] p-3">
+        <Inset>
           <p className="cell-label mb-2">Best performing slots for your audience</p>
           <div className="flex flex-wrap gap-1.5">
             {bestSlots.map((s) => (
@@ -1094,7 +1123,7 @@ function PublishModal({
               </button>
             ))}
           </div>
-        </div>
+        </Inset>
 
         <div>
           <div className="mb-2 flex items-center justify-between">
@@ -1120,7 +1149,7 @@ function PublishModal({
           )}
         </div>
 
-        <div className="rounded-lg border border-line-2 bg-white/[0.016] p-3">
+        <Inset>
           <p className="cell-label mb-2">On publish</p>
           <ul className="space-y-1.5">
             {[
@@ -1134,7 +1163,7 @@ function PublishModal({
               </li>
             ))}
           </ul>
-        </div>
+        </Inset>
       </div>
     </Modal>
   )
